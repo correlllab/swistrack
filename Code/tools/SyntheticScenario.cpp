@@ -6,6 +6,8 @@
 //   groundtruth.csv    frame,id,x,y for every frame in which an object is visible
 //   nn.swistrack       blob pipeline + NearestNeighborTracking + OutputTracksCSV(nn.csv)
 //   mot.swistrack      blob pipeline + MultiObjectTracking + OutputTracksCSV(mot.csv)
+//   split.swistrack    BlobDetectionSplitting + MultiObjectTracking + OutputTracksCSV(split.csv)
+//   known.swistrack    BlobDetectionSplitting + MultiObjectTracking (known number of objects) + OutputTracksCSV(known.csv)
 //   scenario.txt       the parameters used
 //
 // Coordinates follow the convention of SwisTrack's blob detector: pixel (i, j) covers [i, i+1) x [j, j+1),
@@ -345,7 +347,7 @@ std::string FormatDouble(double v) {
 }
 
 void WriteConfiguration(const std::string & path, const std::string & trackerXML, const std::string & csvFile,
-                        int threshold, int minArea, int maxArea, int maxBlobs) {
+                        int threshold, int minArea, int maxArea, int maxBlobs, bool splitBlobs = false) {
 	std::ofstream f(path);
 	f << "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
 	  << "<swistrack>\n"
@@ -365,14 +367,21 @@ void WriteConfiguration(const std::string & path, const std::string & trackerXML
 	  << "      <parameter name=\"Threshold\" value=\"" << threshold << "\"/>\n"
 	  << "      <parameter name=\"InvertThreshold\" value=\"false\"/>\n"
 	  << "    </component>\n"
-	  << "    <component type=\"BlobDetectionMinMax\">\n"
-	  << "      <parameter name=\"MaxNumber\" value=\"" << maxBlobs << "\"/>\n"
-	  << "      <parameter name=\"SelectionByArea\" value=\"true\"/>\n"
-	  << "      <parameter name=\"MinArea\" value=\"" << minArea << "\"/>\n"
-	  << "      <parameter name=\"MaxArea\" value=\"" << maxArea << "\"/>\n"
-	  << "      <parameter name=\"SelectionByCompactness\" value=\"false\"/>\n"
-	  << "      <parameter name=\"SelectionByOrientation\" value=\"false\"/>\n"
-	  << "    </component>\n"
+	  << (splitBlobs ?
+	      "    <component type=\"BlobDetectionSplitting\">\n"
+	      "      <parameter name=\"MaxNumber\" value=\"" + std::to_string(maxBlobs) + "\"/>\n"
+	      "      <parameter name=\"MinArea\" value=\"" + std::to_string(minArea) + "\"/>\n"
+	      "      <parameter name=\"MaxArea\" value=\"0\"/>\n"
+	      "    </component>\n"
+	    :
+	      "    <component type=\"BlobDetectionMinMax\">\n"
+	      "      <parameter name=\"MaxNumber\" value=\"" + std::to_string(maxBlobs) + "\"/>\n"
+	      "      <parameter name=\"SelectionByArea\" value=\"true\"/>\n"
+	      "      <parameter name=\"MinArea\" value=\"" + std::to_string(minArea) + "\"/>\n"
+	      "      <parameter name=\"MaxArea\" value=\"" + std::to_string(maxArea) + "\"/>\n"
+	      "      <parameter name=\"SelectionByCompactness\" value=\"false\"/>\n"
+	      "      <parameter name=\"SelectionByOrientation\" value=\"false\"/>\n"
+	      "    </component>\n")
 	  << trackerXML
 	  << "    <component type=\"OutputTracksCSV\">\n"
 	  << "      <parameter name=\"File\" value=\"" << csvFile << "\"/>\n"
@@ -588,6 +597,13 @@ int main(int argc, char ** argv) {
 	   << "    </component>\n";
 	WriteConfiguration((folder / "nn.swistrack").string(), nn.str(), "nn.csv", threshold, minArea, maxArea, maxBlobs);
 	WriteConfiguration((folder / "mot.swistrack").string(), "    <component type=\"MultiObjectTracking\"/>\n", "mot.csv", threshold, minArea, maxArea, maxBlobs);
+	WriteConfiguration((folder / "split.swistrack").string(), "    <component type=\"MultiObjectTracking\"/>\n", "split.csv", threshold, minArea, maxArea, maxBlobs, true);
+	std::ostringstream known;
+	known << "    <component type=\"MultiObjectTracking\">\n"
+	      << "      <parameter name=\"MaxNumberOfTracks\" value=\"" << s.numObjects << "\"/>\n"
+	      << "      <parameter name=\"FixedNumberOfObjects\" value=\"true\"/>\n"
+	      << "    </component>\n";
+	WriteConfiguration((folder / "known.swistrack").string(), known.str(), "known.csv", threshold, minArea, maxArea, maxBlobs, true);
 
 	std::ofstream info((folder / "scenario.txt").string());
 	info << "scenario " << options.scenario << "\n"

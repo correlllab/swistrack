@@ -3,7 +3,7 @@
 # scores the results against the ground truth and prints a markdown table.
 #
 #   benchmark/run_benchmark.sh BUILD_DIR [--frames N] [--seeds "1 2 3"] [--threshold PX]
-#                              [--scenarios "fish crowded occlusion fast noise"] [--trackers "nn mot"]
+#                              [--scenarios "fish crowded occlusion fast noise"] [--trackers "nn mot split known"]
 #                              [--codec mjpg|ffv1] [--keep DIR]
 #
 # BUILD_DIR must contain the (already built) SwisTrack-batch, swistrack-synth and swistrack-eval executables,
@@ -71,13 +71,13 @@ if [ -f "$BATCH_DIR/Components/MultiObjectTracking.xml" ] || [ -f "$SCRIPT_DIR/.
 fi
 if [ -z "$TRACKERS" ]; then
 	TRACKERS="nn"
-	[ $HAVE_MOT -eq 1 ] && TRACKERS="nn mot"
+	[ $HAVE_MOT -eq 1 ] && TRACKERS="nn mot split known"
 fi
 
 for tracker in $TRACKERS; do
 	case $tracker in
-		nn|mot) ;;
-		*) echo "error: unknown tracker '$tracker' (nn or mot)" >&2; exit 2 ;;
+		nn|mot|split|known) ;;
+		*) echo "error: unknown tracker '$tracker' (nn, mot, split or known)" >&2; exit 2 ;;
 	esac
 done
 
@@ -157,6 +157,8 @@ for scenario in $SCENARIOS; do
 		case $tracker in
 			nn) name="NearestNeighbor" ;;
 			mot) name="MultiObjectTracking" ;;
+			split) name="+ BlobDetectionSplitting" ;;
+			known) name="+ known number of objects" ;;
 		esac
 		results="$WORK/results-$scenario-$tracker.jsonl"
 		if [ ! -f "$results" ] || grep -q '^unavailable' "$results"; then
