@@ -15,7 +15,16 @@ option(SWISTRACK_BUILD_BATCH "Build the SwisTrack-batch command line tool" ON)
 option(SWISTRACK_WITH_SQLITE3 "Build the SQLite3 output component" OFF)
 option(SWISTRACK_BUILD_TESTS "Build the unit tests" ON)
 
-find_package(OpenCV REQUIRED COMPONENTS core imgproc imgcodecs videoio highgui)
+find_package(OpenCV REQUIRED COMPONENTS core imgproc imgcodecs videoio highgui
+	OPTIONAL_COMPONENTS objdetect aruco)
+# Marker detection (MarkerDetector.cpp): objdetect on OpenCV >= 4.7, the contrib aruco module before
+set(SWISTRACK_OPENCV_DEFINITIONS)
+if(OpenCV_objdetect_FOUND)
+	list(APPEND SWISTRACK_OPENCV_DEFINITIONS SWISTRACK_HAVE_OPENCV_OBJDETECT)
+endif()
+if(OpenCV_aruco_FOUND)
+	list(APPEND SWISTRACK_OPENCV_DEFINITIONS SWISTRACK_HAVE_ARUCO_CONTRIB)
+endif()
 
 set(SWISTRACK_WX_COMPONENTS xml base)
 if(SWISTRACK_BUILD_GUI)
@@ -52,6 +61,7 @@ add_library(SwisTrackCore STATIC ${SWISTRACK_CORE_SOURCES})
 target_include_directories(SwisTrackCore PUBLIC Code/core)
 target_include_directories(SwisTrackCore SYSTEM PUBLIC ${OpenCV_INCLUDE_DIRS})
 target_link_libraries(SwisTrackCore PUBLIC tsai ${OpenCV_LIBS} ${wxWidgets_LIBRARIES})
+target_compile_definitions(SwisTrackCore PUBLIC ${SWISTRACK_OPENCV_DEFINITIONS})
 if(SWISTRACK_WITH_SQLITE3)
 	find_package(SQLite3 REQUIRED)
 	target_compile_definitions(SwisTrackCore PUBLIC USE_SQLITE3)
@@ -118,6 +128,7 @@ if(SWISTRACK_BUILD_TESTS)
 	add_executable(TestLinearAssignment Code/tests/TestLinearAssignment.cpp Code/core/LinearAssignment.cpp)
 	target_include_directories(TestLinearAssignment PRIVATE Code/core)
 	add_test(NAME LinearAssignment COMMAND TestLinearAssignment)
+
 endif()
 
 # --- Install ----------------------------------------------------------------
