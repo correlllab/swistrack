@@ -479,8 +479,11 @@ bool THISCLASS::Load(const Config & config, std::string & error, std::vector<std
 	cv::TickMeter tm;
 	for (int attempt = 0; ; attempt++) {
 		try {
-			impl.net.setPreferableBackend(backend.backend);
-			impl.net.setPreferableTarget(backend.target);
+			// CPU is the default (and OpenCV 5's new engine warns about any explicit target), so only set it to undo a failed attempt
+			if (config.backend != BackendCPU || attempt > 0) {
+				impl.net.setPreferableBackend(backend.backend);
+				impl.net.setPreferableTarget(backend.target);
+			}
 			impl.outputNames = impl.net.getUnconnectedOutLayersNames();
 			tm.reset();
 			tm.start();
@@ -564,6 +567,8 @@ bool THISCLASS::Detect(const cv::Mat & image, const Thresholds & thresholds, std
 
 #if ! SWISTRACK_HAVE_DNN
 	(void)thresholds;
+	(void)mSwapRB;
+	(void)mPixelScale;
 	return false;
 #else
 	Impl & impl = *mImpl;
