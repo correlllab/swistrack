@@ -7,3 +7,6 @@ SwisTrackEnvironment/SwisTrack
 SwisTrackEnvironment/SwisTrack-batch
 SwisTrackEnvironment/SwisTrack.app/
 .DS_Store
+Examples/DeepLearning/*.onnx
+Examples/DeepLearning/vtest.avi
+testing/

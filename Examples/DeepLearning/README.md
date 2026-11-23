@@ -14,6 +14,18 @@ To use it, put your video (`video.avi`), your model (`best.onnx`) and its class 
 SwisTrack-batch detector.swistrack
 ```
 
+## Try it: tracking pedestrians
+
+`people.swistrack` tracks the pedestrians in OpenCV's sample video `vtest.avi` with the pretrained YOLOX-Nano model (Apache-2.0; COCO class 0 = person). Download both into this folder and run:
+
+```sh
+curl -LO https://github.com/Megvii-BaseDetection/YOLOX/releases/download/0.1.1rc0/yolox_nano.onnx
+curl -LO https://raw.githubusercontent.com/opencv/opencv/4.x/samples/data/vtest.avi
+SwisTrack-batch people.swistrack        # writes testing/people.csv (frame,id,x,y,vx,vy)
+```
+
+On an Apple M-series CPU, the 795 frames take about 6 s in total (about 8 ms per inference at 416 × 416), producing 24 tracks of 214 frames on average, with about 6.5 people tracked per frame. The detections match an independent Python implementation of the YOLOX post-processing exactly.
+
 SwisTrack needs OpenCV with the `dnn` module, which the usual packages include (Ubuntu `libopencv-dev`, Homebrew `opencv`, vcpkg `opencv4`). If your OpenCV was built without it, the component still shows up but reports an error.
 
 ## Supported models
@@ -95,6 +107,10 @@ The input width and height must match the size the model was exported with (`img
 
 The class of a detection is not stored in the particle. To track a single class, use *Classes*.
 
+## Small objects: tiled inference
+
+The model sees the image scaled down to its input size, so objects that are only a few pixels large after scaling are missed. With *Tile columns/rows* > 1, the image is processed in overlapping tiles at full model resolution (as in SAHI, slicing aided hyper inference). Boxes cut off at an inner tile border are dropped (the object is fully visible in the neighboring tile, as long as it is smaller than the overlap), the full image is processed as well for large objects (*Also process the full image*), and all detections are merged by non-maximum suppression. Each tile costs one inference: 2 × 2 tiles plus the full image is 5 times slower. Use tiling only when objects are small compared to the image (e.g. many small animals in a large arena); for the pedestrians in `vtest.avi`, it does not find more people.
+
 ## Performance
 
 The model loads, and runs once on a blank image, when the pipeline starts or when a model parameter changes. The status then shows the duration of that first inference. Changing a threshold takes effect on the next frame without reloading the model. The step duration of the component shows the time per frame.
@@ -102,4 +118,5 @@ The model loads, and runs once on a blank image, when the pipeline starts or whe
 On a CPU, small models (YOLOv8n, YOLO11n, YOLOX-Nano or YOLOX-Tiny) at 640 × 640 typically take a few tens of milliseconds per frame. Larger models (s, m, l) and input sizes are much slower. If that is too slow:
 
 - Use a smaller model or input size.
+- Restrict the classes (e.g. `0` for persons in COCO models).
 - Use a GPU. This needs an OpenCV built with CUDA (not the standard packages), or OpenCL. OpenCV 5's new inference engine currently runs on the CPU only.
