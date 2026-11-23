@@ -67,6 +67,7 @@
 #include "ComponentThresholdColorIndependent.h"
 #include "ComponentThresholdGray.h"
 #include "ComponentNearestNeighborTracking.h"
+#include "ComponentMultiObjectTracking.h"
 #include "ComponentTrackSmoothing.h"
 #include "ComponentTriggerCounter.h"
 #include "ComponentTriggerTimer.h"
@@ -170,6 +171,7 @@ THISCLASS::SwisTrackCore(wxString componentconfigurationfolder):
 	mAvailableComponents.push_back(new ComponentCalibrationFileTSAI(this));
 
 	// Tracking
+	mAvailableComponents.push_back(new ComponentMultiObjectTracking(this));
 	mAvailableComponents.push_back(new ComponentNearestNeighborTracking(this));
 	mAvailableComponents.push_back(new ComponentTrackSmoothing(this));
 

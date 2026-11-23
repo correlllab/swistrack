@@ -1,0 +1,190 @@
+<?xml version="1.0"?>
+<swistrackcomponent>
+	<friendlyname>Multi-Object Tracking (Kalman, ByteTrack, OC-SORT)</friendlyname>
+	<description>Tracks many objects with a Kalman filter (constant velocity) and optimal association. Uses low-confidence detections to bridge partial occlusions (ByteTrack) and recovers tracks after occlusions using their last observation (OC-SORT). Particles that already carry an ID (e.g. fiducial markers) are assigned to the track with that ID.</description>
+	<url>https://github.com/correlllab/swistrack/wiki/MultiObjectTracking</url>
+	<displayimage>Output</displayimage>
+
+	<configuration>
+
+		<title>Association</title>
+		<parameter type="double">
+			<name>MaxDistance</name>
+			<label>Max. distance</label>
+			<min>0</min>
+			<max>1000</max>
+			<default>30</default>
+			<unit>pixels</unit>
+			<slider>true</slider>
+			<sliderstep>1</sliderstep>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="checkbox">
+			<name>UseMahalanobis</name>
+			<label>Gate with Kalman uncertainty (Mahalanobis)</label>
+			<default>1</default>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="double">
+			<name>DirectionWeight</name>
+			<label>Direction consistency weight</label>
+			<min>0</min>
+			<max>2</max>
+			<default>0.2</default>
+			<slider>true</slider>
+			<sliderstep>0.05</sliderstep>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="checkbox">
+			<name>ObservationCentricRecovery</name>
+			<label>Recover tracks from last observation</label>
+			<default>1</default>
+			<onchange>reload</onchange>
+		</parameter>
+
+		<title>Motion model</title>
+		<parameter type="double">
+			<name>ProcessNoise</name>
+			<label>Acceleration noise</label>
+			<min>0</min>
+			<max>100</max>
+			<default>1.0</default>
+			<unit>pixels/frame²</unit>
+			<slider>true</slider>
+			<sliderstep>0.1</sliderstep>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="double">
+			<name>MeasurementNoise</name>
+			<label>Detection noise</label>
+			<min>0.01</min>
+			<max>100</max>
+			<default>2.0</default>
+			<unit>pixels</unit>
+			<slider>true</slider>
+			<sliderstep>0.1</sliderstep>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="double">
+			<name>InitialVelocityStd</name>
+			<label>Initial velocity uncertainty</label>
+			<min>0</min>
+			<max>1000</max>
+			<default>10</default>
+			<unit>pixels/frame</unit>
+			<slider>true</slider>
+			<sliderstep>1</sliderstep>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="checkbox">
+			<name>ObservationCentricReupdate</name>
+			<label>Re-update filter after occlusions</label>
+			<default>1</default>
+			<onchange>reload</onchange>
+		</parameter>
+
+		<title>Track life cycle</title>
+		<parameter type="integer">
+			<name>MinHits</name>
+			<label>Detections to confirm a track</label>
+			<min>1</min>
+			<max>100</max>
+			<default>3</default>
+			<unit>frames</unit>
+			<slider>true</slider>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="integer">
+			<name>MaxAge</name>
+			<label>Keep lost tracks for</label>
+			<min>0</min>
+			<max>10000</max>
+			<default>30</default>
+			<unit>frames</unit>
+			<slider>true</slider>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="integer">
+			<name>MaxNumberOfTracks</name>
+			<label>Max. number of tracks (0 = unlimited)</label>
+			<min>0</min>
+			<max>100000</max>
+			<default>0</default>
+			<unit>tracks</unit>
+			<onchange>reload</onchange>
+		</parameter>
+		<label>If the number of objects is known (e.g. a group of animals), set it as max. number of tracks and enable the following option: lost objects are then re-identified instead of getting new IDs.</label>
+		<parameter type="checkbox">
+			<name>FixedNumberOfObjects</name>
+			<label>Known number of objects</label>
+			<default>0</default>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="double">
+			<name>ReidentificationDistance</name>
+			<label>Max. re-identification distance (0 = unlimited)</label>
+			<min>0</min>
+			<max>100000</max>
+			<default>0</default>
+			<unit>pixels</unit>
+			<onchange>reload</onchange>
+		</parameter>
+
+		<title>Detection scores</title>
+		<label>Detectors that report a confidence (e.g. deep learning) use these thresholds. Blob detectors always report 1.</label>
+		<parameter type="double">
+			<name>HighScoreThreshold</name>
+			<label>High confidence</label>
+			<min>0</min>
+			<max>1</max>
+			<default>0.5</default>
+			<slider>true</slider>
+			<sliderstep>0.01</sliderstep>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="double">
+			<name>LowScoreThreshold</name>
+			<label>Low confidence (ignored below)</label>
+			<min>0</min>
+			<max>1</max>
+			<default>0.1</default>
+			<slider>true</slider>
+			<sliderstep>0.01</sliderstep>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="double">
+			<name>NewTrackScoreThreshold</name>
+			<label>Min. confidence for new tracks</label>
+			<min>0</min>
+			<max>1</max>
+			<default>0.6</default>
+			<slider>true</slider>
+			<sliderstep>0.01</sliderstep>
+			<onchange>reload</onchange>
+		</parameter>
+
+		<title>Identity and output</title>
+		<parameter type="checkbox">
+			<name>UseParticleIDs</name>
+			<label>Use particle IDs (e.g. markers)</label>
+			<default>1</default>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="checkbox">
+			<name>OutputFilteredPositions</name>
+			<label>Output filtered positions</label>
+			<default>1</default>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="integer">
+			<name>MaxNumberOfPoints</name>
+			<label>Trajectory points kept in memory</label>
+			<min>1</min>
+			<max>100000</max>
+			<default>100</default>
+			<unit>points</unit>
+			<slider>true</slider>
+			<onchange>reload</onchange>
+		</parameter>
+	</configuration>
+</swistrackcomponent>
