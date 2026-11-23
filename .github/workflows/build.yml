@@ -25,6 +25,8 @@ jobs:
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$PWD/dist
       - name: Build
         run: cmake --build build
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
       - name: Smoke test
         run: ./build/SwisTrack-batch | grep -q "Usage"
       - name: Install
@@ -49,6 +51,8 @@ jobs:
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$PWD/dist
       - name: Build
         run: cmake --build build
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
       - name: Smoke test
         run: ./build/SwisTrack-batch | grep -q "Usage"
       - name: Install
@@ -92,6 +96,8 @@ jobs:
           key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
       - name: Build
         run: cmake --build build --config Release
+      - name: Test
+        run: ctest --test-dir build -C Release --output-on-failure
       - name: Smoke test
         shell: bash
         run: ./build/Release/SwisTrack-batch.exe | grep -q "Usage"

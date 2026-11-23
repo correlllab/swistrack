@@ -13,6 +13,7 @@ endif()
 option(SWISTRACK_BUILD_GUI "Build the SwisTrack GUI application" ON)
 option(SWISTRACK_BUILD_BATCH "Build the SwisTrack-batch command line tool" ON)
 option(SWISTRACK_WITH_SQLITE3 "Build the SQLite3 output component" OFF)
+option(SWISTRACK_BUILD_TESTS "Build the unit tests" ON)
 
 find_package(OpenCV REQUIRED COMPONENTS core imgproc imgcodecs videoio highgui)
 
@@ -109,6 +110,14 @@ if(SWISTRACK_BUILD_GUI AND NOT APPLE)
 endif()
 if(SWISTRACK_BUILD_BATCH)
 	swistrack_copy_runtime_files(SwisTrack-batch)
+endif()
+
+# --- Tests ------------------------------------------------------------------
+if(SWISTRACK_BUILD_TESTS)
+	enable_testing()
+	add_executable(TestLinearAssignment Code/tests/TestLinearAssignment.cpp Code/core/LinearAssignment.cpp)
+	target_include_directories(TestLinearAssignment PRIVATE Code/core)
+	add_test(NAME LinearAssignment COMMAND TestLinearAssignment)
 endif()
 
 # --- Install ----------------------------------------------------------------
