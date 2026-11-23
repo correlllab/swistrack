@@ -1,0 +1,79 @@
+<?xml version="1.0"?>
+<swistrackcomponent>
+	<friendlyname>Blob Detection (split touching objects)</friendlyname>
+	<description>Detects blobs on a binary image. Blobs of touching objects (e.g. animals in contact) are split into individual detections, based on the area of a single object, which can be learned automatically.</description>
+	<url>https://github.com/correlllab/swistrack/wiki/BlobDetectionSplitting</url>
+	<displayimage>Output</displayimage>
+
+	<configuration>
+		<parameter type="integer">
+			<name>MinArea</name>
+			<label>Min. blob size</label>
+			<min>0</min>
+			<max>999999</max>
+			<default>10</default>
+			<unit>pixels</unit>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="integer">
+			<name>MaxArea</name>
+			<label>Max. blob size (0 = no limit)</label>
+			<min>0</min>
+			<max>9999999</max>
+			<default>0</default>
+			<unit>pixels</unit>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="integer">
+			<name>MaxNumber</name>
+			<label>Max. detections (0 = unlimited)</label>
+			<min>0</min>
+			<max>100000</max>
+			<default>0</default>
+			<unit>blobs</unit>
+			<onchange>reload</onchange>
+		</parameter>
+		<title>Splitting</title>
+		<label>A blob of about k times the area of a single object is split into k detections. Set the object area to 0 to learn it from the video (median blob area).</label>
+		<parameter type="double">
+			<name>ObjectArea</name>
+			<label>Area of one object (0 = learn)</label>
+			<min>0</min>
+			<max>9999999</max>
+			<default>0</default>
+			<unit>pixels</unit>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="double">
+			<name>SplitRatio</name>
+			<label>Split blobs larger than</label>
+			<min>1</min>
+			<max>10</max>
+			<default>1.6</default>
+			<unit>x object area</unit>
+			<slider>true</slider>
+			<sliderstep>0.05</sliderstep>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="integer">
+			<name>MaxObjectsPerBlob</name>
+			<label>Max. objects per blob</label>
+			<min>1</min>
+			<max>16</max>
+			<default>4</default>
+			<unit>objects</unit>
+			<slider>true</slider>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="double">
+			<name>SplitScore</name>
+			<label>Confidence of split detections</label>
+			<min>0</min>
+			<max>1</max>
+			<default>0.7</default>
+			<slider>true</slider>
+			<sliderstep>0.05</sliderstep>
+			<onchange>reload</onchange>
+		</parameter>
+	</configuration>
+</swistrackcomponent>
