@@ -15,8 +15,18 @@ option(SWISTRACK_BUILD_BATCH "Build the SwisTrack-batch command line tool" ON)
 option(SWISTRACK_WITH_SQLITE3 "Build the SQLite3 output component" OFF)
 option(SWISTRACK_BUILD_TESTS "Build the unit tests" ON)
 
-# OpenCV 5 moved the contour geometry functions into the geometry module
-find_package(OpenCV REQUIRED COMPONENTS core imgproc imgcodecs videoio highgui video OPTIONAL_COMPONENTS geometry)
+# OpenCV 5 moved the contour geometry functions into the geometry module.
+# Marker detection uses objdetect (OpenCV >= 4.7) or the contrib aruco module (older versions).
+find_package(OpenCV REQUIRED COMPONENTS core imgproc imgcodecs videoio highgui video
+	OPTIONAL_COMPONENTS geometry objdetect aruco)
+# Marker detection (MarkerDetector.cpp): objdetect on OpenCV >= 4.7, the contrib aruco module before
+set(SWISTRACK_OPENCV_DEFINITIONS)
+if(OpenCV_objdetect_FOUND)
+	list(APPEND SWISTRACK_OPENCV_DEFINITIONS SWISTRACK_HAVE_OPENCV_OBJDETECT)
+endif()
+if(OpenCV_aruco_FOUND)
+	list(APPEND SWISTRACK_OPENCV_DEFINITIONS SWISTRACK_HAVE_ARUCO_CONTRIB)
+endif()
 
 set(SWISTRACK_WX_COMPONENTS xml base)
 if(SWISTRACK_BUILD_GUI)
@@ -53,6 +63,7 @@ add_library(SwisTrackCore STATIC ${SWISTRACK_CORE_SOURCES})
 target_include_directories(SwisTrackCore PUBLIC Code/core)
 target_include_directories(SwisTrackCore SYSTEM PUBLIC ${OpenCV_INCLUDE_DIRS})
 target_link_libraries(SwisTrackCore PUBLIC tsai ${OpenCV_LIBS} ${wxWidgets_LIBRARIES})
+target_compile_definitions(SwisTrackCore PUBLIC ${SWISTRACK_OPENCV_DEFINITIONS})
 if(SWISTRACK_WITH_SQLITE3)
 	find_package(SQLite3 REQUIRED)
 	target_compile_definitions(SwisTrackCore PUBLIC USE_SQLITE3)
@@ -129,6 +140,13 @@ if(SWISTRACK_BUILD_TESTS)
 	target_include_directories(TestBlobSplitter SYSTEM PRIVATE ${OpenCV_INCLUDE_DIRS})
 	target_link_libraries(TestBlobSplitter PRIVATE opencv_core opencv_imgproc)
 	add_test(NAME BlobSplitter COMMAND TestBlobSplitter)
+
+	add_executable(TestMarkerDetector Code/tests/TestMarkerDetector.cpp Code/core/MarkerDetector.cpp)
+	target_include_directories(TestMarkerDetector PRIVATE Code/core)
+	target_include_directories(TestMarkerDetector SYSTEM PRIVATE ${OpenCV_INCLUDE_DIRS})
+	target_compile_definitions(TestMarkerDetector PRIVATE ${SWISTRACK_OPENCV_DEFINITIONS})
+	target_link_libraries(TestMarkerDetector PRIVATE ${OpenCV_LIBS})
+	add_test(NAME MarkerDetector COMMAND TestMarkerDetector)
 endif()
 
 # --- Install ----------------------------------------------------------------

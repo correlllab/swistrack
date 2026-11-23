@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<swistrack>
+  <components>
+    <component type="InputFileAVI">
+      <enabledinterval value="1"/>
+      <parameter name="File" value="markers.avi"/>
+    </component>
+    <component type="ConvertInputToGray">
+      <enabledinterval value="1"/>
+      <parameter name="Channel" value="-1"/>
+    </component>
+    <component type="MarkerDetection">
+      <enabledinterval value="1"/>
+      <parameter name="Dictionary" value="APRILTAG_36h11"/>
+      <parameter name="MinMarkerPerimeterRate" value="0.03"/>
+      <parameter name="CornerRefinement" value="Subpix"/>
+      <parameter name="FilterByID" value="false"/>
+      <parameter name="MinID" value="0"/>
+      <parameter name="MaxID" value="1000"/>
+      <parameter name="ShowRejected" value="false"/>
+    </component>
+    <component type="MultiObjectTracking"/>
+    <component type="OutputTracksToFiles">
+      <enabledinterval value="1"/>
+    </component>
+  </components>
+  <server>
+    <port>3000</port>
+  </server>
+</swistrack>
