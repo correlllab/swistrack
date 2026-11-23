@@ -129,6 +129,12 @@ if(SWISTRACK_BUILD_TESTS)
 	target_include_directories(TestLinearAssignment PRIVATE Code/core)
 	add_test(NAME LinearAssignment COMMAND TestLinearAssignment)
 
+	add_executable(TestMarkerDetector Code/tests/TestMarkerDetector.cpp Code/core/MarkerDetector.cpp)
+	target_include_directories(TestMarkerDetector PRIVATE Code/core)
+	target_include_directories(TestMarkerDetector SYSTEM PRIVATE ${OpenCV_INCLUDE_DIRS})
+	target_compile_definitions(TestMarkerDetector PRIVATE ${SWISTRACK_OPENCV_DEFINITIONS})
+	target_link_libraries(TestMarkerDetector PRIVATE ${OpenCV_LIBS})
+	add_test(NAME MarkerDetector COMMAND TestMarkerDetector)
 endif()
 
 # --- Install ----------------------------------------------------------------
