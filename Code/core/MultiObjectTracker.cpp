@@ -89,13 +89,6 @@ void THISCLASS::Correct(Track & track, cv::Point2f z) const {
 double THISCLASS::Cost(const Track & track, const Detection & detection, CostMode mode) const {
 	const Parameters & p = mParameters;
 
-	if (mode == sCostReidentification) {
-		cv::Point2f last = track.observations.empty() ? cv::Point2f((float)track.x(0), (float)track.x(1)) : track.observations.back().position;
-		double d = cv::norm(detection.position - last);
-		if (p.reidentificationDistance > 0 && d > p.reidentificationDistance) return sInfinity;
-		return d;
-	}
-
 	if (mode == sCostLastObservation) {
 		if (track.observations.empty()) return sInfinity;
 		double d = cv::norm(detection.position - track.observations.back().position);
@@ -206,14 +199,78 @@ int THISCLASS::NumberOfIdentities() const {
 	return (int)mTracks.size();
 }
 
+bool THISCLASS::FixedMode() const {
+	return mParameters.fixedNumberOfObjects && mParameters.maxTracks > 0;
+}
+
 int THISCLASS::AllocateID() {
-	if (mParameters.fixedNumberOfObjects && mParameters.maxTracks > 0) {
-		for (int id = 0; id < mParameters.maxTracks; id++)
-			if (mTracks.find(id) == mTracks.end()) return id;
-		return -1;
+	// With a known number of objects, new tracks get a temporary ID until they are confirmed
+	if (FixedMode()) {
+		if (mNextID < sTemporaryIDBase) mNextID = sTemporaryIDBase;
+		while (mTracks.find(mNextID) != mTracks.end()) mNextID++;
+		return mNextID++;
 	}
 	while (mTracks.find(mNextID) != mTracks.end()) mNextID++;
 	return mNextID++;
+}
+
+void THISCLASS::PromoteConfirmedTracks() {
+	// Known number of objects: a newly confirmed track (temporary ID) inherits the identity of a lost object,
+	// or takes a free identity. If all N objects are being tracked, it is spurious and dropped.
+	// Re-identifying only confirmed tracks (instead of single detections) keeps noise from stealing identities.
+	const Parameters & p = mParameters;
+	std::vector<int> candidates, lostSlots, freeSlots;
+	for (auto & entry : mTracks)
+		if (entry.first >= sTemporaryIDBase && entry.second.state != sTentative) candidates.push_back(entry.first);
+	if (candidates.empty()) return;
+	for (int id = 0; id < p.maxTracks; id++) {
+		auto it = mTracks.find(id);
+		if (it == mTracks.end()) freeSlots.push_back(id);
+		else if (it->second.state == sLost) lostSlots.push_back(id);
+	}
+
+	// Optimal re-identification: candidates vs. lost objects, by distance from the last observation
+	const int rows = (int)candidates.size(), cols = (int)lostSlots.size();
+	LinearAssignment::tCostMatrix cost((size_t)rows * cols);
+	for (int r = 0; r < rows; r++) {
+		const Track & candidate = mTracks[candidates[r]];
+		cv::Point2f origin = candidate.observations.front().position;
+		for (int c = 0; c < cols; c++) {
+			const Track & lost = mTracks[lostSlots[c]];
+			cv::Point2f last = lost.observations.empty() ? cv::Point2f((float)lost.x(0), (float)lost.x(1)) : lost.observations.back().position;
+			double d = cv::norm(origin - last);
+			cost[(size_t)r * cols + c] = (p.reidentificationDistance > 0 && d > p.reidentificationDistance) ? sInfinity : d;
+		}
+	}
+
+	// Free identities are used first (objects that were never seen), then lost ones are re-identified
+	std::vector<int> unassignedRows, unassignedCols;
+	std::vector<std::pair<int, int>> renames;	// (temporary ID, slot)
+	size_t nextFree = 0;
+	std::vector<int> remaining;
+	for (int r = 0; r < rows; r++) {
+		if (nextFree < freeSlots.size()) renames.push_back(std::make_pair(candidates[r], freeSlots[nextFree++]));
+		else remaining.push_back(r);
+	}
+	if (! remaining.empty() && cols > 0) {
+		LinearAssignment::tCostMatrix subCost;
+		for (int r : remaining)
+			for (int c = 0; c < cols; c++) subCost.push_back(cost[(size_t)r * cols + c]);
+		auto pairs = LinearAssignment::Solve(subCost, (int)remaining.size(), cols, sInfinity, unassignedRows, unassignedCols);
+		for (auto & pair : pairs) renames.push_back(std::make_pair(candidates[remaining[pair.first]], lostSlots[pair.second]));
+		std::vector<int> stillRemaining;
+		for (int r : unassignedRows) stillRemaining.push_back(remaining[r]);
+		remaining.swap(stillRemaining);
+	}
+
+	for (auto & rename : renames) {
+		Track track = mTracks[rename.first];
+		mTracks.erase(rename.first);
+		track.id = rename.second;
+		track.state = sTracked;
+		mTracks[rename.second] = track;
+	}
+	for (int r : remaining) mTracks.erase(candidates[r]);
 }
 
 // --- Main update ---------------------------------------------------------------
@@ -282,16 +339,12 @@ std::vector<int> THISCLASS::Update(int frameNumber, const std::vector<Detection>
 	// Stage 4: tentative tracks vs. remaining high detections
 	Associate(tentative, high, detections, sCostPrediction, frameNumber);
 
-	// Known number of objects: re-identify lost tracks with the remaining detections
-	if (p.fixedNumberOfObjects)
-		Associate(confirmed, high, detections, sCostReidentification, frameNumber);
-
 	// Unmatched tentative tracks are dropped, unmatched confirmed tracks are lost
 	for (int id : tentative) mTracks.erase(id);
 	for (int id : confirmed) {
 		Track & track = mTracks[id];
 		track.state = sLost;
-		if (! p.fixedNumberOfObjects && track.framesSinceUpdate > p.maxAge) mTracks.erase(id);
+		if (! FixedMode() && track.framesSinceUpdate > p.maxAge) mTracks.erase(id);
 	}
 
 	// New tracks from unmatched high-confidence detections (most confident first)
@@ -299,7 +352,7 @@ std::vector<int> THISCLASS::Update(int frameNumber, const std::vector<Detection>
 	for (int i : high) {
 		const Detection & detection = detections[i];
 		if (detection.score < p.newTrackScoreThreshold) continue;
-		if (p.maxTracks > 0 && NumberOfIdentities() >= p.maxTracks) break;
+		if (! FixedMode() && p.maxTracks > 0 && NumberOfIdentities() >= p.maxTracks) break;
 		int id = AllocateID();
 		if (id < 0) break;
 
@@ -317,6 +370,8 @@ std::vector<int> THISCLASS::Update(int frameNumber, const std::vector<Detection>
 		inserted.observations.push_back(Observation{frameNumber, detection.position});
 		if (p.minHits <= 1 || mFrameCount == 1) inserted.state = sTracked;
 	}
+
+	if (FixedMode()) PromoteConfirmedTracks();
 
 	// Result: detection -> confirmed track ID
 	std::vector<int> result(detections.size(), -1);

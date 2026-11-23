@@ -96,6 +96,34 @@ static void TestFixedNumberOfObjects() {
 	CHECK(tracker.GetTracks().size() == 3, "fixed number: %zu tracks alive", tracker.GetTracks().size());
 }
 
+// Known number of objects with noise: single-frame false detections must never take over an identity,
+// and a hidden object gets its identity back when it reappears.
+static void TestFixedNumberWithNoise() {
+	MultiObjectTracker tracker;
+	MultiObjectTracker::Parameters p;
+	p.maxTracks = 3;
+	p.fixedNumberOfObjects = true;
+	tracker.SetParameters(p);
+	std::mt19937 rng(3);
+	int hiddenID = -1;
+	for (int f = 0; f <= 150; f++) {
+		std::vector<Detection> detections;
+		cv::Point2f a(100.0f + f, 100.0f), b(100.0f + f, 300.0f), c(400.0f, 100.0f + f);
+		detections.push_back(Detection(a));
+		detections.push_back(Detection(b));
+		bool hidden = f >= 40 && f < 100;
+		if (! hidden) detections.push_back(Detection(c));
+		// Single-frame noise specks far from all objects
+		cv::Point2f speck(600.0f + (float)(rng() % 200), 400.0f + (float)(rng() % 200));
+		detections.push_back(Detection(speck));
+		auto ids = tracker.Update(f, detections);
+		if (f == 30) hiddenID = ids[2];
+		CHECK(ids.back() == -1, "noise: speck got ID %d at frame %d", ids.back(), f);
+		for (int id : ids) CHECK(id < 3, "noise: ID %d outside 0..2 at frame %d", id, f);
+		if (f == 105) CHECK(ids[2] == hiddenID, "noise: hidden object came back as %d, expected %d", ids[2], hiddenID);
+	}
+}
+
 // Detections carrying an ID (markers) are bound to that track immediately.
 static void TestDetectionIDs() {
 	MultiObjectTracker tracker;
@@ -159,6 +187,7 @@ int main() {
 	TestOcclusion();
 	TestLowScoreDetections();
 	TestFixedNumberOfObjects();
+	TestFixedNumberWithNoise();
 	TestDetectionIDs();
 	TestFrameGaps();
 	TestRandomWalk();

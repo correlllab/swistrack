@@ -44,7 +44,7 @@ public:
 		bool observationCentricReupdate;	//!< Re-run the filter along a virtual trajectory after an occlusion (OC-SORT ORU).
 		bool useDetectionIDs;				//!< Detections with an ID (>= 0) are assigned to the track with that ID.
 		int maxTracks;						//!< Max. number of simultaneous tracks (0 = unlimited).
-		bool fixedNumberOfObjects;			//!< Known number of objects: IDs 0..maxTracks-1 are reused, lost tracks are re-identified.
+		bool fixedNumberOfObjects;			//!< Known number of objects: only IDs 0..maxTracks-1 are used; newly confirmed tracks inherit the ID of a lost object.
 		double reidentificationDistance;	//!< (fixed number of objects) Max. distance for re-identifying a lost track, 0 = unlimited [px].
 
 		Parameters();
@@ -139,13 +139,15 @@ private:
 	// Association
 	enum CostMode {
 		sCostPrediction,		//!< Distance to the predicted position (gated, with direction term).
-		sCostLastObservation,	//!< Distance to the last observation (OC-SORT recovery).
-		sCostReidentification	//!< Distance to the last observation, wide gate (known number of objects).
+		sCostLastObservation	//!< Distance to the last observation (OC-SORT recovery).
 	};
 	double Cost(const Track & track, const Detection & detection, CostMode mode) const;
 	void Associate(std::vector<int> & trackIDs, std::vector<int> & detectionIndices, const std::vector<Detection> & detections, CostMode mode, int frameNumber);
 	void Assign(Track & track, int detectionIndex, const Detection & detection, int frameNumber);
 	int AllocateID();
+	bool FixedMode() const;
+	void PromoteConfirmedTracks();
+	static const int sTemporaryIDBase = 1 << 28;	//!< Temporary IDs of unconfirmed tracks (known number of objects).
 	int NumberOfIdentities() const;
 };
 
