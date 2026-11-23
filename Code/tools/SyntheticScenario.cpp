@@ -104,6 +104,7 @@ struct Scenario {
 
 	// Arena
 	bool circularArena = true;
+	double arenaScale = 1;			// arena size relative to the image
 	double backgroundGray = 205;	// arena intensity
 	double outsideGray = 150;		// intensity outside the circular arena
 
@@ -202,6 +203,7 @@ bool MakeScenario(const Options & options, Scenario & s) {
 		s.numObjects = 10;
 	} else if (options.scenario == "crowded") {
 		s.numObjects = 30;
+		s.arenaScale = 0.65;
 		s.halfLength = 5.5;
 		s.halfWidth = 2.5;
 		s.circularArena = false;
@@ -209,7 +211,7 @@ bool MakeScenario(const Options & options, Scenario & s) {
 		s.turnNoise = 0.04;
 	} else if (options.scenario == "occlusion") {
 		s.numObjects = 8;
-		s.occluders = 4;
+		s.occluders = 6;
 	} else if (options.scenario == "fast") {
 		s.numObjects = 8;
 		s.halfLength = 8;
@@ -408,11 +410,12 @@ int main(int argc, char ** argv) {
 	arena.circular = s.circularArena;
 	arena.cx = W / 2.0;
 	arena.cy = H / 2.0;
-	arena.radius = std::min(W, H) / 2.0 - 4;
-	arena.rect = Rect{4, 4, W - 4.0, H - 4.0};
+	arena.radius = s.arenaScale * std::min(W, H) / 2.0 - 4;
+	double arenaHalfWidth = s.arenaScale * W / 2.0 - 4, arenaHalfHeight = s.arenaScale * H / 2.0 - 4;
+	arena.rect = Rect{W / 2.0 - arenaHalfWidth, H / 2.0 - arenaHalfHeight, W / 2.0 + arenaHalfWidth, H / 2.0 + arenaHalfHeight};
 	arena.margin = s.halfLength + 2;
 
-	// Static background: light arena with a gentle gradient and low-frequency texture
+	// Static background: light arena with a gentle gradient and low-frequency texture (darker outside the arena)
 	cv::Mat background(H, W, CV_32F);
 	{
 		double p1 = 2 * PI * rng.Uniform(), p2 = 2 * PI * rng.Uniform();
@@ -422,17 +425,19 @@ int main(int argc, char ** argv) {
 				double x = i + 0.5, y = j + 0.5;
 				double v = s.backgroundGray - 10.0 * (x / W - 0.5) + 6.0 * (y / H - 0.5)
 					+ 3.0 * std::sin(x * 0.031 + p1) * std::cos(y * 0.027 + p2);
-				if (arena.circular && ! arena.Inside(x, y)) v = s.outsideGray;
+				if (! arena.Inside(x, y)) v = s.outsideGray;
 				row[i] = (float) v;
 			}
 		}
 	}
 
-	// Occluders: static rectangles inside the arena, slightly darker than the arena floor, drawn over the objects
+	// Occluders: static bars inside the arena, slightly darker than the arena floor, drawn over the objects.
+	// Their width (12-28 px) hides an object crossing them for a few frames.
 	std::vector<Rect> occluders;
 	for (int k = 0; k < s.occluders; k++) {
 		for (int attempt = 0; attempt < 100; attempt++) {
-			double w = 25 + 35 * rng.Uniform(), h = 25 + 35 * rng.Uniform();
+			double w = 12 + 16 * rng.Uniform(), h = 60 + 80 * rng.Uniform();
+			if (rng.Uniform() < 0.5) std::swap(w, h);
 			double x, y;
 			arena.RandomPoint(rng, x, y);
 			Rect r{std::floor(x - w / 2), std::floor(y - h / 2), std::floor(x + w / 2), std::floor(y + h / 2)};
