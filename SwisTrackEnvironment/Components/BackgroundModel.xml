@@ -1,0 +1,78 @@
+<?xml version="1.0"?>
+<swistrackcomponent>
+	<friendlyname>Adaptive Background Model (MOG2/KNN)</friendlyname>
+	<description>Learns the background with a per-pixel Gaussian mixture (MOG2) or k-nearest-neighbors (KNN) model and outputs the foreground as a binary image. Adapts to lighting changes, and can remove shadows. No background image needed.</description>
+	<url>https://github.com/correlllab/swistrack/wiki/BackgroundModel</url>
+	<displayimage>Output</displayimage>
+
+	<configuration>
+		<parameter type="dropdownlist">
+			<name>Method</name>
+			<label>Method</label>
+			<items>
+				<item key="MOG2">Gaussian mixture (MOG2)</item>
+				<item key="KNN">K-nearest neighbors (KNN)</item>
+			</items>
+			<default>MOG2</default>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="checkbox">
+			<name>UseColor</name>
+			<label>Model the color image</label>
+			<default>0</default>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="integer">
+			<name>History</name>
+			<label>History</label>
+			<min>1</min>
+			<max>100000</max>
+			<default>500</default>
+			<unit>frames</unit>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="double">
+			<name>Threshold</name>
+			<label>Threshold (MOG2: 16, KNN: 400)</label>
+			<min>0</min>
+			<max>100000</max>
+			<default>16</default>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="checkbox">
+			<name>DetectShadows</name>
+			<label>Remove shadows</label>
+			<default>1</default>
+			<onchange>reload</onchange>
+		</parameter>
+		<title>Learning</title>
+		<label>Objects that stop moving are slowly learned into the background. To prevent this, learn the background on the first frames only (e.g. with an empty arena), or lower the learning rate.</label>
+		<parameter type="double">
+			<name>LearningRate</name>
+			<label>Learning rate (-1 = automatic)</label>
+			<min>-1</min>
+			<max>1</max>
+			<default>-1</default>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="integer">
+			<name>FreezeAfterFrames</name>
+			<label>Stop learning after (0 = never)</label>
+			<min>0</min>
+			<max>10000000</max>
+			<default>0</default>
+			<unit>frames</unit>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="integer">
+			<name>OpeningSize</name>
+			<label>Noise removal (opening) size</label>
+			<min>0</min>
+			<max>31</max>
+			<default>3</default>
+			<unit>pixels</unit>
+			<slider>true</slider>
+			<onchange>reload</onchange>
+		</parameter>
+	</configuration>
+</swistrackcomponent>

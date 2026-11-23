@@ -1,4 +1,4 @@
-# SwisTrack 4.2
+# SwisTrack 4.3
 
 [![Build](https://github.com/correlllab/swistrack/actions/workflows/build.yml/badge.svg)](https://github.com/correlllab/swistrack/actions/workflows/build.yml)
 
@@ -12,6 +12,55 @@ SwisTrack was developed at EPFL (Distributed Intelligent Systems and Algorithms 
 
 - [Wiki](https://github.com/d28b/swistrack/wiki) (SwisTrack 4.2)
 - [SwisTrack Wikibook](https://en.wikibooks.org/wiki/SwisTrack) (original documentation, partly outdated)
+
+## Modern tracking
+
+SwisTrack 4.3 adds a tracking-by-detection stack based on current best practice in multi-object tracking:
+
+| Component | What it does |
+|---|---|
+| **Multi-Object Tracking** (`MultiObjectTracking`) | Kalman filter (constant velocity) per object, optimal (Hungarian) association with Mahalanobis gating, [ByteTrack](https://arxiv.org/abs/2110.06864)-style two-stage association that uses low-confidence detections to bridge partial occlusions, and [OC-SORT](https://arxiv.org/abs/2203.14360)'s direction-consistency cost, recovery from the last observation and filter re-update after occlusions. Tracks go through a tentative → confirmed → lost life cycle. |
+| — *known number of objects* | For experiments with a fixed group size (e.g. 10 fish): set *Max. number of tracks* and enable *Known number of objects*. Only IDs 0…N−1 are used. A new track becomes an identity only once it is confirmed, and then inherits the identity of the nearest lost animal, so noise cannot steal identities. |
+| **Blob Detection (split touching objects)** (`BlobDetectionSplitting`) | Learns the area and shape of a single object, and splits blobs of touching animals into individual detections with a shape-constrained Gaussian mixture (correctly separates animals lying side by side, where k-means fails). |
+| **Adaptive Background Model** (`BackgroundModel`) | MOG2 / KNN background subtraction: no background image needed, adapts to lighting, removes shadows, optional freeze after N frames. |
+| **Marker Detection** (`MarkerDetection`) | AprilTag (36h11, 25h9, 16h5, 36h10) and ArUco markers: ID, position and orientation per marker. Marker IDs become track IDs directly, so robots never swap identities. See [Examples/Markers](Examples/Markers). |
+| **Object Detection (Deep Learning, ONNX)** (`ObjectDetectionDNN`) | Runs a YOLO-family detector (YOLOv5/v7/v8/11, YOLOX) exported to ONNX with OpenCV's dnn module, for scenes where background subtraction does not work (moving camera, clutter, changing background). Detection confidences feed the tracker's two-stage association. See [Examples/DeepLearning](Examples/DeepLearning). |
+| **Output Tracks CSV** (`OutputTracksCSV`) | One CSV file per run (`frame,id,x,y,vx,vy`). |
+
+On the `Examples/leurre` video (10 fish, 900 frames), the classic pipeline with `NearestNeighborTracking` produces 49 track fragments. `leurre.modern.swistrack` (blob splitting + multi-object tracking with a known number of objects) tracks all 10 fish in 99.9% of the frames with exactly 10 identities.
+
+### Benchmark
+
+`benchmark/run_benchmark.sh build` renders synthetic videos with exact ground truth (`swistrack-synth`), runs SwisTrack-batch on them and scores the result (`swistrack-eval`: MOTA, IDF1, HOTA, ID switches). Mean over 3 seeds, 600 frames each, 10 px match threshold:
+
+| Scenario | Pipeline | MOTA | IDF1 | HOTA | ID switches |
+|---|---|---:|---:|---:|---:|
+| fish (10 animals) | NearestNeighborTracking | 0.986 | 0.760 | 0.765 | 15.3 |
+| | MultiObjectTracking | 0.988 | 0.976 | 0.947 | 3.3 |
+| | + BlobDetectionSplitting | 0.998 | 0.976 | 0.918 | 0.7 |
+| crowded (30) | NearestNeighborTracking | 0.961 | 0.542 | 0.574 | 107.3 |
+| | MultiObjectTracking | 0.965 | 0.747 | 0.748 | 39.7 |
+| | + BlobDetectionSplitting | 0.993 | 0.950 | 0.891 | 6.7 |
+| occlusion | NearestNeighborTracking | 0.971 | 0.459 | 0.556 | 36.7 |
+| | MultiObjectTracking | 0.975 | 0.784 | 0.771 | 11.3 |
+| | + splitting + known number | 0.986 | 0.946 | 0.876 | 2.0 |
+| fast maneuvers | NearestNeighborTracking | 0.986 | 0.484 | 0.548 | 39.7 |
+| | MultiObjectTracking | 0.991 | 0.781 | 0.621 | 6.0 |
+| | + splitting + known number | 0.996 | 0.908 | 0.675 | 2.0 |
+| noise + false positives | NearestNeighborTracking | 0.906 | 0.680 | 0.676 | 19.7 |
+| | MultiObjectTracking | 0.945 | 0.880 | 0.840 | 7.3 |
+| | + splitting + known number | 0.956 | 0.978 | 0.899 | 0.0 |
+
+See [benchmark/README.md](benchmark/README.md) for the metric definitions and options.
+
+A typical pipeline:
+
+```
+InputFileAVI → ConvertInputToGray → BackgroundSubtractionGray / BackgroundModel → ThresholdGray
+  → BlobDetectionSplitting → MultiObjectTracking → OutputTracksToFiles
+```
+
+The tracking algorithms are plain C++ classes without GUI dependencies (`Code/core/MultiObjectTracker`, `BlobSplitter`, `MarkerDetector`, `ObjectDetectorDNN`, `LinearAssignment`) and have unit tests (`ctest --test-dir build`).
 
 ## Building
 

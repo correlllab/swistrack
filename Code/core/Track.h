@@ -19,6 +19,7 @@ class Track {
 public:
 	int mID;								//!< ID.
 	std::deque<TrackPoint> mTrajectory;		//!< Trajectory.
+	cv::Point2f mVelocity;					//!< Estimated velocity [pixels/frame] (zero if the tracker does not estimate it).
 
 	Track();
 	~Track();

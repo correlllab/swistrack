@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<swistrackcomponent>
+	<friendlyname>Output Tracks to a CSV File</friendlyname>
+	<description>Writes all tracks into a single CSV file with the columns frame,id,x,y,vx,vy (one row per track and frame in which the track was updated).</description>
+	<url>http://en.wikibooks.org/wiki/SwisTrack/Components/OutputTracksCSV</url>
+	<displayimage>Output</displayimage>
+
+	<configuration>
+		<parameter type="outputfile">
+			<name>File</name>
+			<label>CSV file</label>
+			<default>tracks.csv</default>
+			<onchange>restart</onchange>
+		</parameter>
+		<label>Relative file names are written into the run folder (e.g. "testing/tracks.csv" next to the configuration file when running SwisTrack-batch).</label>
+	</configuration>
+</swistrackcomponent>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<swistrack>
+  <components>
+    <component type="InputFileAVI"><parameter name="File" value="vtest.avi"/></component>
+    <component type="ConvertInputToColor"/>
+    <component type="ObjectDetectionDNN">
+      <parameter name="ModelFile" value="yolox_nano.onnx"/>
+      <parameter name="InputWidth" value="416"/>
+      <parameter name="InputHeight" value="416"/>
+      <parameter name="MinScore" value="0.1"/>
+      <parameter name="Classes" value="0"/>
+    </component>
+    <component type="MultiObjectTracking"/>
+    <component type="OutputTracksCSV"><parameter name="File" value="people.csv"/></component>
+  </components>
+</swistrack>

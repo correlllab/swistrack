@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(SwisTrack VERSION 4.2.0 LANGUAGES C CXX)
+project(SwisTrack VERSION 4.3.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -13,9 +13,20 @@ endif()
 option(SWISTRACK_BUILD_GUI "Build the SwisTrack GUI application" ON)
 option(SWISTRACK_BUILD_BATCH "Build the SwisTrack-batch command line tool" ON)
 option(SWISTRACK_WITH_SQLITE3 "Build the SQLite3 output component" OFF)
+option(SWISTRACK_BUILD_TESTS "Build the unit tests" ON)
 
-# OpenCV 5 moved the contour geometry functions into the geometry module
-find_package(OpenCV REQUIRED COMPONENTS core imgproc imgcodecs videoio highgui OPTIONAL_COMPONENTS geometry)
+# OpenCV 5 moved the contour geometry functions into the geometry module.
+# Marker detection uses objdetect (OpenCV >= 4.7) or the contrib aruco module (older versions).
+find_package(OpenCV REQUIRED COMPONENTS core imgproc imgcodecs videoio highgui video
+	OPTIONAL_COMPONENTS geometry objdetect aruco dnn)
+# Marker detection (MarkerDetector.cpp): objdetect on OpenCV >= 4.7, the contrib aruco module before
+set(SWISTRACK_OPENCV_DEFINITIONS)
+if(OpenCV_objdetect_FOUND)
+	list(APPEND SWISTRACK_OPENCV_DEFINITIONS SWISTRACK_HAVE_OPENCV_OBJDETECT)
+endif()
+if(OpenCV_aruco_FOUND)
+	list(APPEND SWISTRACK_OPENCV_DEFINITIONS SWISTRACK_HAVE_ARUCO_CONTRIB)
+endif()
 
 set(SWISTRACK_WX_COMPONENTS xml base)
 if(SWISTRACK_BUILD_GUI)
@@ -52,6 +63,14 @@ add_library(SwisTrackCore STATIC ${SWISTRACK_CORE_SOURCES})
 target_include_directories(SwisTrackCore PUBLIC Code/core)
 target_include_directories(SwisTrackCore SYSTEM PUBLIC ${OpenCV_INCLUDE_DIRS})
 target_link_libraries(SwisTrackCore PUBLIC tsai ${OpenCV_LIBS} ${wxWidgets_LIBRARIES})
+target_compile_definitions(SwisTrackCore PUBLIC ${SWISTRACK_OPENCV_DEFINITIONS})
+# Deep learning detectors need OpenCV's dnn module (otherwise the component is built as a stub that reports an error)
+if(OpenCV_dnn_FOUND)
+	target_compile_definitions(SwisTrackCore PUBLIC SWISTRACK_OPENCV_DNN=1)
+else()
+	target_compile_definitions(SwisTrackCore PUBLIC SWISTRACK_OPENCV_DNN=0)
+	message(STATUS "OpenCV dnn module not found: ObjectDetectionDNN will be disabled")
+endif()
 if(SWISTRACK_WITH_SQLITE3)
 	find_package(SQLite3 REQUIRED)
 	target_compile_definitions(SwisTrackCore PUBLIC USE_SQLITE3)
@@ -112,6 +131,39 @@ if(SWISTRACK_BUILD_BATCH)
 	swistrack_copy_runtime_files(SwisTrack-batch)
 endif()
 
+# --- Tests ------------------------------------------------------------------
+if(SWISTRACK_BUILD_TESTS)
+	enable_testing()
+	add_executable(TestLinearAssignment Code/tests/TestLinearAssignment.cpp Code/core/LinearAssignment.cpp)
+	target_include_directories(TestLinearAssignment PRIVATE Code/core)
+	add_test(NAME LinearAssignment COMMAND TestLinearAssignment)
+	add_executable(TestMultiObjectTracker Code/tests/TestMultiObjectTracker.cpp Code/core/MultiObjectTracker.cpp Code/core/LinearAssignment.cpp)
+	target_include_directories(TestMultiObjectTracker PRIVATE Code/core)
+	target_include_directories(TestMultiObjectTracker SYSTEM PRIVATE ${OpenCV_INCLUDE_DIRS})
+	target_link_libraries(TestMultiObjectTracker PRIVATE opencv_core)
+	add_test(NAME MultiObjectTracker COMMAND TestMultiObjectTracker)
+	add_executable(TestBlobSplitter Code/tests/TestBlobSplitter.cpp Code/core/BlobSplitter.cpp)
+	target_include_directories(TestBlobSplitter PRIVATE Code/core)
+	target_include_directories(TestBlobSplitter SYSTEM PRIVATE ${OpenCV_INCLUDE_DIRS})
+	target_link_libraries(TestBlobSplitter PRIVATE opencv_core opencv_imgproc)
+	add_test(NAME BlobSplitter COMMAND TestBlobSplitter)
+
+	add_executable(TestMarkerDetector Code/tests/TestMarkerDetector.cpp Code/core/MarkerDetector.cpp)
+	target_include_directories(TestMarkerDetector PRIVATE Code/core)
+	target_include_directories(TestMarkerDetector SYSTEM PRIVATE ${OpenCV_INCLUDE_DIRS})
+	target_compile_definitions(TestMarkerDetector PRIVATE ${SWISTRACK_OPENCV_DEFINITIONS})
+	target_link_libraries(TestMarkerDetector PRIVATE ${OpenCV_LIBS})
+	add_test(NAME MarkerDetector COMMAND TestMarkerDetector)
+	if(OpenCV_dnn_FOUND)
+		add_executable(TestObjectDetectorDNN Code/tests/TestObjectDetectorDNN.cpp Code/core/ObjectDetectorDNN.cpp)
+		target_include_directories(TestObjectDetectorDNN PRIVATE Code/core)
+		target_include_directories(TestObjectDetectorDNN SYSTEM PRIVATE ${OpenCV_INCLUDE_DIRS})
+		target_compile_definitions(TestObjectDetectorDNN PRIVATE SWISTRACK_OPENCV_DNN=1)
+		target_link_libraries(TestObjectDetectorDNN PRIVATE ${OpenCV_LIBS})
+		add_test(NAME ObjectDetectorDNN COMMAND TestObjectDetectorDNN)
+	endif()
+endif()
+
 # --- Install ----------------------------------------------------------------
 include(GNUInstallDirs)
 if(APPLE)
@@ -145,4 +197,32 @@ else()
 	install(TARGETS ${_targets} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 	install(DIRECTORY ${SWISTRACK_RUNTIME_DIR}/Components DESTINATION ${CMAKE_INSTALL_DATADIR}/swistrack)
 	install(FILES ${SWISTRACK_RUNTIME_DIR}/default.swistrack DESTINATION ${CMAKE_INSTALL_DATADIR}/swistrack)
+endif()
+
+# --- Tracking benchmark tools (synthetic scenarios, evaluation) ---------------
+option(SWISTRACK_BUILD_BENCHMARK "Build the tracking benchmark tools (swistrack-synth, swistrack-eval)" ON)
+if(SWISTRACK_BUILD_BENCHMARK)
+	add_executable(swistrack-synth Code/tools/SyntheticScenario.cpp)
+	target_include_directories(swistrack-synth SYSTEM PRIVATE ${OpenCV_INCLUDE_DIRS})
+	target_link_libraries(swistrack-synth PRIVATE ${OpenCV_LIBS})
+
+	# Evaluation (no OpenCV / wxWidgets dependency)
+	add_executable(swistrack-eval Code/tools/EvaluateTracking.cpp Code/tools/TrackingMetrics.cpp Code/core/LinearAssignment.cpp)
+	target_include_directories(swistrack-eval PRIVATE Code/core Code/tools)
+	if(SWISTRACK_BUILD_TESTS)
+		add_executable(TestTrackingMetrics Code/tests/TestTrackingMetrics.cpp Code/tools/TrackingMetrics.cpp Code/core/LinearAssignment.cpp)
+		target_include_directories(TestTrackingMetrics PRIVATE Code/core Code/tools)
+		add_test(NAME TrackingMetrics COMMAND TestTrackingMetrics)
+	endif()
+
+	# End-to-end: generate a short scenario, track it with SwisTrack-batch, evaluate
+	if(SWISTRACK_BUILD_TESTS AND SWISTRACK_BUILD_BATCH)
+		add_test(NAME BenchmarkEndToEnd
+			COMMAND ${CMAKE_COMMAND}
+				-DSYNTH=$<TARGET_FILE:swistrack-synth>
+				-DBATCH=$<TARGET_FILE:SwisTrack-batch>
+				-DEVAL=$<TARGET_FILE:swistrack-eval>
+				-DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/benchmark-e2e
+				-P ${CMAKE_CURRENT_SOURCE_DIR}/benchmark/EndToEndTest.cmake)
+	endif()
 endif()

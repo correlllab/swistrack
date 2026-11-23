@@ -16,12 +16,14 @@ public:
 	cv::Point2f mWorldCenter;	//!< Particle center after calibration [m].
 
 	cv::Mat mColorModel;		//!< Color histogram of the particle.
+	float mScore;				//!< Detection confidence in [0, 1] (1 for detectors without a notion of confidence).
+	cv::Rect2f mBoundingBox;	//!< Bounding box [pixels], empty if the detector does not provide one.
 
 	int mFrameNumber;			//!< Frame number.
 	wxDateTime mFrameTimestamp;	//!< Frame timestamp.
 
 	//! Constructor.
-	Particle(): mID(-1), mCenter(), mOrientation(0), mArea(0), mCompactness(0), mWorldCenter(), mColorModel(), mFrameNumber(0), mFrameTimestamp() { }
+	Particle(): mID(-1), mCenter(), mOrientation(0), mArea(0), mCompactness(0), mWorldCenter(), mColorModel(), mScore(1.0f), mBoundingBox(), mFrameNumber(0), mFrameTimestamp() { }
 	//! Destructor.
 	~Particle() { }
 

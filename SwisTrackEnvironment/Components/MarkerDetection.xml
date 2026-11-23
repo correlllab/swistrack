@@ -1,0 +1,83 @@
+<?xml version="1.0"?>
+<swistrackcomponent>
+	<friendlyname>Marker Detection (ArUco/AprilTag)</friendlyname>
+	<description>Detects square fiducial markers (AprilTag or ArUco) on the grayscale image. Each marker becomes a particle whose ID is the marker ID, and whose orientation is the angle of the marker's x-axis (top-left to top-right corner) in image coordinates.</description>
+	<url>https://docs.opencv.org/4.x/d5/dae/tutorial_aruco_detection.html</url>
+	<displayimage>Output</displayimage>
+
+	<configuration>
+		<parameter type="dropdownlist">
+			<name>Dictionary</name>
+			<label>Dictionary</label>
+			<items>
+				<item key="APRILTAG_36h11">AprilTag 36h11</item>
+				<item key="APRILTAG_25h9">AprilTag 25h9</item>
+				<item key="APRILTAG_16h5">AprilTag 16h5</item>
+				<item key="APRILTAG_36h10">AprilTag 36h10</item>
+				<item key="4X4_50">ArUco 4x4 (50 markers)</item>
+				<item key="4X4_250">ArUco 4x4 (250 markers)</item>
+				<item key="5X5_100">ArUco 5x5 (100 markers)</item>
+				<item key="6X6_250">ArUco 6x6 (250 markers)</item>
+				<item key="ARUCO_ORIGINAL">ArUco original</item>
+			</items>
+			<default>APRILTAG_36h11</default>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="double">
+			<name>MinMarkerPerimeterRate</name>
+			<label>Min. marker perimeter</label>
+			<min>0.005</min>
+			<max>1</max>
+			<default>0.03</default>
+			<slider>true</slider>
+			<sliderstep>0.005</sliderstep>
+			<onchange>reload</onchange>
+		</parameter>
+		<label>Relative to the largest image dimension. Lower values detect smaller markers, but are slower.</label>
+		<parameter type="dropdownlist">
+			<name>CornerRefinement</name>
+			<label>Corner refinement</label>
+			<items>
+				<item key="None">None</item>
+				<item key="Subpix">Sub-pixel</item>
+				<item key="Contour">Contour line fitting</item>
+				<item key="AprilTag">AprilTag (accurate, slow)</item>
+			</items>
+			<default>Subpix</default>
+			<onchange>reload</onchange>
+		</parameter>
+
+		<line />
+		<parameter type="checkbox">
+			<name>FilterByID</name>
+			<label>Filter by ID</label>
+			<default>0</default>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="integer">
+			<name>MinID</name>
+			<label>Min. ID</label>
+			<min>0</min>
+			<max>999999</max>
+			<default>0</default>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="integer">
+			<name>MaxID</name>
+			<label>Max. ID</label>
+			<min>0</min>
+			<max>999999</max>
+			<default>1000</default>
+			<onchange>reload</onchange>
+		</parameter>
+
+		<line />
+		<parameter type="checkbox">
+			<name>ShowRejected</name>
+			<label>Show rejected candidates</label>
+			<default>0</default>
+			<onchange>reload</onchange>
+		</parameter>
+		<label>Draws the square candidates that were not recognized as markers (red) on the display, for tuning.</label>
+	</configuration>
+</swistrackcomponent>

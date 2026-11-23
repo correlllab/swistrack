@@ -1,0 +1,219 @@
+// Scenario tests for MultiObjectTracker (Kalman + Hungarian + ByteTrack + OC-SORT).
+#include "MultiObjectTracker.h"
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <map>
+#include <random>
+#include <set>
+
+typedef MultiObjectTracker::Detection Detection;
+
+static int sFailures = 0;
+#define CHECK(condition, ...) do { if (! (condition)) { sFailures++; std::printf("FAIL %s:%d: ", __FILE__, __LINE__); std::printf(__VA_ARGS__); std::printf("\n"); } } while (0)
+
+static int IdNear(const std::vector<Detection> & detections, const std::vector<int> & ids, cv::Point2f p) {
+	for (size_t i = 0; i < detections.size(); i++)
+		if (cv::norm(detections[i].position - p) < 1e-3) return ids[i];
+	return -2;
+}
+
+// Two objects cross in an X; while they overlap, the detector reports a single merged blob.
+// Identities must follow the motion (not swap).
+static void TestCrossing() {
+	MultiObjectTracker tracker;
+	int idA = -1, idB = -1;
+	for (int f = 0; f <= 100; f++) {
+		cv::Point2f a(10.0f + 2 * f, 10.0f + 2 * f), b(10.0f + 2 * f, 210.0f - 2 * f);
+		std::vector<Detection> detections;
+		if (cv::norm(a - b) < 12) detections.push_back(Detection((a + b) * 0.5f));
+		else detections = {Detection(a), Detection(b)};
+		auto ids = tracker.Update(f, detections);
+		if (f == 10) {
+			idA = IdNear(detections, ids, a);
+			idB = IdNear(detections, ids, b);
+		}
+		if (f == 100) {
+			CHECK(IdNear(detections, ids, a) == idA && idA >= 0, "crossing: object A changed ID (%d -> %d)", idA, IdNear(detections, ids, a));
+			CHECK(IdNear(detections, ids, b) == idB && idB >= 0, "crossing: object B changed ID (%d -> %d)", idB, IdNear(detections, ids, b));
+		}
+	}
+}
+
+// An object disappears behind an occluder for 15 frames and reappears; it must keep its ID.
+static void TestOcclusion() {
+	MultiObjectTracker tracker;
+	int id = -1;
+	for (int f = 0; f <= 80; f++) {
+		cv::Point2f p(20.0f + 3.0f * f, 100.0f + 0.5f * f);
+		std::vector<Detection> detections;
+		if (f < 30 || f >= 45) detections.push_back(Detection(p));
+		auto ids = tracker.Update(f, detections);
+		if (f == 20) id = ids[0];
+		if (f == 46) CHECK(ids.size() == 1 && ids[0] == id, "occlusion: ID %d after reappearing, expected %d", ids.empty() ? -9 : ids[0], id);
+	}
+}
+
+// Low-confidence detections (partial occlusion) keep a track alive (ByteTrack second stage).
+static void TestLowScoreDetections() {
+	MultiObjectTracker tracker;
+	MultiObjectTracker::Parameters p;
+	p.maxAge = 3;
+	tracker.SetParameters(p);
+	int id = -1;
+	for (int f = 0; f <= 40; f++) {
+		cv::Point2f pos(50.0f + 2.0f * f, 50.0f);
+		float score = (f >= 10 && f < 30) ? 0.3f : 0.9f;
+		auto ids = tracker.Update(f, {Detection(pos, score)});
+		if (f == 5) id = ids[0];
+		if (f == 20) CHECK(ids[0] == id, "low score: ID %d during low-confidence phase, expected %d", ids[0], id);
+		if (f == 40) CHECK(ids[0] == id, "low score: ID %d afterwards, expected %d", ids[0], id);
+	}
+	// A low-confidence detection alone never starts a track
+	MultiObjectTracker t2;
+	auto ids = t2.Update(0, {Detection(cv::Point2f(10, 10), 0.3f)});
+	CHECK(ids[0] == -1 && t2.GetTracks().empty(), "low score: a low-confidence detection started a track");
+}
+
+// Known number of objects: after a long disappearance, objects are re-identified with the same set of IDs.
+static void TestFixedNumberOfObjects() {
+	MultiObjectTracker tracker;
+	MultiObjectTracker::Parameters p;
+	p.maxTracks = 3;
+	p.fixedNumberOfObjects = true;
+	p.maxAge = 5;
+	tracker.SetParameters(p);
+	std::set<int> seen;
+	for (int f = 0; f <= 200; f++) {
+		std::vector<Detection> detections;
+		if (f < 50 || f >= 150) {
+			float shift = f >= 150 ? 300.0f : 0.0f;
+			for (int k = 0; k < 3; k++) detections.push_back(Detection(cv::Point2f(100.0f + 100 * k + shift, 100.0f + f)));
+		}
+		auto ids = tracker.Update(f, detections);
+		for (int id : ids) if (id >= 0) seen.insert(id);
+	}
+	CHECK(seen == std::set<int>({0, 1, 2}), "fixed number: got %zu distinct IDs", seen.size());
+	CHECK(tracker.GetTracks().size() == 3, "fixed number: %zu tracks alive", tracker.GetTracks().size());
+}
+
+// Known number of objects with noise: single-frame false detections must never take over an identity,
+// and a hidden object gets its identity back when it reappears.
+static void TestFixedNumberWithNoise() {
+	MultiObjectTracker tracker;
+	MultiObjectTracker::Parameters p;
+	p.maxTracks = 3;
+	p.fixedNumberOfObjects = true;
+	tracker.SetParameters(p);
+	std::mt19937 rng(3);
+	int hiddenID = -1;
+	for (int f = 0; f <= 150; f++) {
+		std::vector<Detection> detections;
+		cv::Point2f a(100.0f + f, 100.0f), b(100.0f + f, 300.0f), c(400.0f, 100.0f + f);
+		detections.push_back(Detection(a));
+		detections.push_back(Detection(b));
+		bool hidden = f >= 40 && f < 100;
+		if (! hidden) detections.push_back(Detection(c));
+		// Single-frame noise specks far from all objects
+		cv::Point2f speck(600.0f + (float)(rng() % 200), 400.0f + (float)(rng() % 200));
+		detections.push_back(Detection(speck));
+		auto ids = tracker.Update(f, detections);
+		if (f == 30) hiddenID = ids[2];
+		CHECK(ids.back() == -1, "noise: speck got ID %d at frame %d", ids.back(), f);
+		for (int id : ids) CHECK(id < 3, "noise: ID %d outside 0..2 at frame %d", id, f);
+		if (f == 105) CHECK(ids[2] == hiddenID, "noise: hidden object came back as %d, expected %d", ids[2], hiddenID);
+	}
+}
+
+// Detections carrying an ID (markers) are bound to that track immediately.
+static void TestDetectionIDs() {
+	MultiObjectTracker tracker;
+	tracker.Update(0, {Detection(cv::Point2f(0, 0))});
+	auto ids = tracker.Update(1, {Detection(cv::Point2f(500, 500), 1.0f, 42), Detection(cv::Point2f(1, 0))});
+	CHECK(ids[0] == 42, "IDs: marker detection got ID %d", ids[0]);
+	ids = tracker.Update(2, {Detection(cv::Point2f(400, 400), 1.0f, 42)});
+	CHECK(ids[0] == 42, "IDs: marker detection got ID %d after a jump", ids[0]);
+}
+
+// Frame gaps (e.g. processing every 2nd frame) are handled by the motion model.
+static void TestFrameGaps() {
+	MultiObjectTracker tracker;
+	int id = -1;
+	for (int f = 0; f <= 100; f += 4) {
+		auto ids = tracker.Update(f, {Detection(cv::Point2f(10.0f + 5.0f * f, 20.0f))});
+		if (f == 8) id = ids[0];
+		if (f > 8) CHECK(ids[0] == id, "gaps: ID %d at frame %d, expected %d", ids[0], f, id);
+	}
+}
+
+// Portable normal random numbers (std::normal_distribution differs between standard libraries)
+struct PortableNormal {
+	std::mt19937 & rng;
+	float sigma;
+	PortableNormal(std::mt19937 & rng, float mean, float sigma): rng(rng), sigma(sigma) { (void)mean; }
+	float operator()(std::mt19937 &) {
+		double u1 = (rng() + 1.0) / 4294967297.0, u2 = rng() / 4294967296.0;
+		return (float)(sigma * std::sqrt(-2.0 * std::log(u1)) * std::cos(2.0 * CV_PI * u2));
+	}
+};
+
+// Many objects with random-walk motion and detection noise: count identity switches.
+static void TestRandomWalk(unsigned int seed, int & totalSwitches, int & totalAmbiguous) {
+	std::mt19937 rng(seed);
+	PortableNormal noise(rng, 0.0f, 1.0f), turn(rng, 0.0f, 0.15f);
+	const int n = 20;
+	std::vector<cv::Point2f> position(n);
+	std::vector<float> heading(n), speed(n);
+	for (int k = 0; k < n; k++) {
+		position[k] = cv::Point2f(60.0f + 120.0f * (k % 5), 60.0f + 120.0f * (k / 5));
+		heading[k] = (float)(rng() % 628) / 100.0f;
+		speed[k] = 2.0f + (float)(rng() % 100) / 50.0f;
+	}
+	MultiObjectTracker tracker;
+	std::map<int, int> assigned;	// object -> track ID
+	int switches = 0, missed = 0;
+	for (int f = 0; f < 500; f++) {
+		std::vector<Detection> detections;
+		for (int k = 0; k < n; k++) {
+			heading[k] += turn(rng);
+			position[k] += speed[k] * cv::Point2f(std::cos(heading[k]), std::sin(heading[k]));
+			if (position[k].x < 20 || position[k].x > 600) heading[k] = (float)CV_PI - heading[k];
+			if (position[k].y < 20 || position[k].y > 480) heading[k] = -heading[k];
+			detections.push_back(Detection(position[k] + cv::Point2f(noise(rng), noise(rng))));
+		}
+		auto ids = tracker.Update(f, detections);
+		for (int k = 0; k < n; k++) {
+			if (ids[k] < 0) { if (f > 5) missed++; continue; }
+			auto it = assigned.find(k);
+			if (it != assigned.end() && it->second != ids[k]) {
+				switches++;
+				// Switches while another object is within 3 detection-noise sigmas are inherently ambiguous
+				float nearest = 1e9f;
+				for (int j = 0; j < n; j++) if (j != k) nearest = std::min(nearest, (float)cv::norm(position[j] - position[k]));
+				if (nearest < 3.0f) totalAmbiguous++;
+			}
+			assigned[k] = ids[k];
+		}
+	}
+	totalSwitches += switches;
+	CHECK(missed == 0, "random walk (seed %u): %d unassigned detections", seed, missed);
+}
+
+int main() {
+	TestCrossing();
+	TestOcclusion();
+	TestLowScoreDetections();
+	TestFixedNumberOfObjects();
+	TestFixedNumberWithNoise();
+	TestDetectionIDs();
+	TestFrameGaps();
+	int switches = 0, ambiguous = 0;
+	for (unsigned int seed = 1; seed <= 10; seed++) TestRandomWalk(seed, switches, ambiguous);
+	std::printf("random walk (10 x 20 objects x 500 frames): %d ID switches, %d of them with another object closer than 3 px\n", switches, ambiguous);
+	// Regression guard. Nearly all switches happen in close encounters (< 6 px at 1 px detection noise) and come in pairs
+	// (swap and swap back); without appearance cues, these are inherently ambiguous. Reference: 110 switches with the
+	// default parameters (148 without Mahalanobis gating).
+	CHECK(switches <= 130, "random walk: %d ID switches (expected about 110)", switches);
+	std::printf("MultiObjectTracker: %d failures\n", sFailures);
+	return sFailures == 0 ? 0 : 1;
+}

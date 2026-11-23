@@ -8,12 +8,14 @@
 #include "ComponentAdaptiveThreshold.h"
 #include "ComponentBackgroundSubtractionColor.h"
 #include "ComponentBackgroundSubtractionGray.h"
+#include "ComponentBackgroundModel.h"
 #include "ComponentBinaryBlur.h"
 #include "ComponentBinaryDilation.h"
 #include "ComponentBinaryErosion.h"
 #include "ComponentBinaryMask.h"
 #include "ComponentBlobDetectionCircularHough.h"
 #include "ComponentBlobDetectionMinMax.h"
+#include "ComponentBlobDetectionSplitting.h"
 #include "ComponentBlobDetectionRedGreen.h"
 #include "ComponentBlobDetectionTwoColors.h"
 #include "ComponentCalibrationFileTSAI.h"
@@ -48,10 +50,13 @@
 #include "ComponentInputFileAVI.h"
 #include "ComponentInputFileImage.h"
 #include "ComponentInvertBinary.h"
+#include "ComponentMarkerDetection.h"
 #include "ComponentMorphology.h"
+#include "ComponentObjectDetectionDNN.h"
 #include "ComponentOutputBufferedFileAVI.h"
 #include "ComponentOutputFileAVI.h"
 #include "ComponentOutputTracksToFiles.h"
+#include "ComponentOutputTracksCSV.h"
 #include "ComponentOutputFramesImages.h"
 #include "ComponentOutputImageOverlayColor.h"
 #include "ComponentOutputImageStatisticsBinary.h"
@@ -67,6 +72,7 @@
 #include "ComponentThresholdColorIndependent.h"
 #include "ComponentThresholdGray.h"
 #include "ComponentNearestNeighborTracking.h"
+#include "ComponentMultiObjectTracking.h"
 #include "ComponentTrackSmoothing.h"
 #include "ComponentTriggerCounter.h"
 #include "ComponentTriggerTimer.h"
@@ -138,6 +144,7 @@ THISCLASS::SwisTrackCore(wxString componentconfigurationfolder):
 	mAvailableComponents.push_back(new ComponentChannelCalculationGray(this));
 	mAvailableComponents.push_back(new ComponentBackgroundSubtractionGray(this));
 	mAvailableComponents.push_back(new ComponentAdaptiveBackgroundSubtractionGray(this));
+	mAvailableComponents.push_back(new ComponentBackgroundModel(this));
 	mAvailableComponents.push_back(new ComponentGrayMask(this));
 	mAvailableComponents.push_back(new ComponentConvertGrayToColor(this));
 	mAvailableComponents.push_back(new ComponentThresholdGray(this));
@@ -157,10 +164,13 @@ THISCLASS::SwisTrackCore(wxString componentconfigurationfolder):
 
 	// Particle Detection
 	mAvailableComponents.push_back(new ComponentBlobDetectionMinMax(this));
+	mAvailableComponents.push_back(new ComponentBlobDetectionSplitting(this));
 	mAvailableComponents.push_back(new ComponentBlobDetectionTwoColors(this));
 	mAvailableComponents.push_back(new ComponentBlobDetectionRedGreen(this));
 	mAvailableComponents.push_back(new ComponentBlobDetectionCircularHough(this));
+	mAvailableComponents.push_back(new ComponentObjectDetectionDNN(this));
 	mAvailableComponents.push_back(new ComponentIDReaderRing(this));
+	mAvailableComponents.push_back(new ComponentMarkerDetection(this));
 	mAvailableComponents.push_back(new ComponentSimulationParticles(this));
 	mAvailableComponents.push_back(new ComponentFilterParticles(this));
 
@@ -170,6 +180,7 @@ THISCLASS::SwisTrackCore(wxString componentconfigurationfolder):
 	mAvailableComponents.push_back(new ComponentCalibrationFileTSAI(this));
 
 	// Tracking
+	mAvailableComponents.push_back(new ComponentMultiObjectTracking(this));
 	mAvailableComponents.push_back(new ComponentNearestNeighborTracking(this));
 	mAvailableComponents.push_back(new ComponentTrackSmoothing(this));
 
@@ -177,6 +188,7 @@ THISCLASS::SwisTrackCore(wxString componentconfigurationfolder):
 	mAvailableComponents.push_back(new ComponentOutputParticles(this));
 	mAvailableComponents.push_back(new ComponentOutputParticlesToFile(this));
 	mAvailableComponents.push_back(new ComponentOutputTracksToFiles(this));
+	mAvailableComponents.push_back(new ComponentOutputTracksCSV(this));
 	mAvailableComponents.push_back(new ComponentOutputSQLite(this));
 	mAvailableComponents.push_back(new ComponentOutputFileAVI(this));
 	mAvailableComponents.push_back(new ComponentOutputBufferedFileAVI(this));
