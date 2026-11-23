@@ -154,3 +154,11 @@ else()
 	install(DIRECTORY ${SWISTRACK_RUNTIME_DIR}/Components DESTINATION ${CMAKE_INSTALL_DATADIR}/swistrack)
 	install(FILES ${SWISTRACK_RUNTIME_DIR}/default.swistrack DESTINATION ${CMAKE_INSTALL_DATADIR}/swistrack)
 endif()
+
+# --- Tracking benchmark tools (synthetic scenarios, evaluation) ---------------
+option(SWISTRACK_BUILD_BENCHMARK "Build the tracking benchmark tools (swistrack-synth, swistrack-eval)" ON)
+if(SWISTRACK_BUILD_BENCHMARK)
+	add_executable(swistrack-synth Code/tools/SyntheticScenario.cpp)
+	target_include_directories(swistrack-synth SYSTEM PRIVATE ${OpenCV_INCLUDE_DIRS})
+	target_link_libraries(swistrack-synth PRIVATE ${OpenCV_LIBS})
+endif()
