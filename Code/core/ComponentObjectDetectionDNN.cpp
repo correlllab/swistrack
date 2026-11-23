@@ -131,6 +131,9 @@ void THISCLASS::OnReloadConfiguration() {
 	}
 
 	for (const wxString & warning : mLoadWarnings) AddWarning(warning);
+	for (int c : mThresholds.classes)
+		if (c >= mDetector.GetNumClasses())
+			AddWarning(wxString::Format(wxT("Class %d does not exist: the model has %d classes (0 to %d)."), c, mDetector.GetNumClasses(), mDetector.GetNumClasses() - 1));
 	AddInfo(wxString::Format(wxT("Model: %s, %d classes, %dx%d input, %s. First inference: %.1f ms."),
 		ToWx(ObjectDetectorDNN::FormatName(mDetector.GetFormat())), mDetector.GetNumClasses(),
 		config.inputSize.width, config.inputSize.height, ToWx(mDetector.GetBackendDescription()), mDetector.GetWarmupMs()));
