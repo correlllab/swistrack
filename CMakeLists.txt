@@ -118,6 +118,11 @@ if(SWISTRACK_BUILD_TESTS)
 	add_executable(TestLinearAssignment Code/tests/TestLinearAssignment.cpp Code/core/LinearAssignment.cpp)
 	target_include_directories(TestLinearAssignment PRIVATE Code/core)
 	add_test(NAME LinearAssignment COMMAND TestLinearAssignment)
+	add_executable(TestMultiObjectTracker Code/tests/TestMultiObjectTracker.cpp Code/core/MultiObjectTracker.cpp Code/core/LinearAssignment.cpp)
+	target_include_directories(TestMultiObjectTracker PRIVATE Code/core)
+	target_include_directories(TestMultiObjectTracker SYSTEM PRIVATE ${OpenCV_INCLUDE_DIRS})
+	target_link_libraries(TestMultiObjectTracker PRIVATE opencv_core)
+	add_test(NAME MultiObjectTracker COMMAND TestMultiObjectTracker)
 endif()
 
 # --- Install ----------------------------------------------------------------
