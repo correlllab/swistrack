@@ -4,6 +4,7 @@
 #include "ConfigurationReaderXML.h"
 #include "SwisTrackCore.h"
 #include "NMEALog.h"
+#include "RuntimeFolder.h"
 #include <stdio.h>
 #include <iostream>
 #include <wx/filename.h>
@@ -42,7 +43,7 @@ void THISCLASS::Help() {
 
 int THISCLASS::RunBatch(const wxString filenameString) {
 	// Initialize the core
-	SwisTrackCore * core = new SwisTrackCore(wxT("./Components"));
+	SwisTrackCore * core = new SwisTrackCore(FindRuntimeFolder() + wxT("/Components"));
 	core->mCommunicationInterface = new NMEALog(wxT("swistrack.log"));
 
 	// Open the file
