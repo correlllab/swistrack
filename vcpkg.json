@@ -1,0 +1,9 @@
+{
+  "name": "swistrack",
+  "version-string": "4.2.0",
+  "description": "Tracking software for robots, humans, animals and objects using a camera or a recorded video as input.",
+  "dependencies": [
+    "opencv4",
+    "wxwidgets"
+  ]
+}
