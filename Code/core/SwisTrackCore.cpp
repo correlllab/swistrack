@@ -55,6 +55,7 @@
 #include "ComponentOutputBufferedFileAVI.h"
 #include "ComponentOutputFileAVI.h"
 #include "ComponentOutputTracksToFiles.h"
+#include "ComponentOutputTracksCSV.h"
 #include "ComponentOutputFramesImages.h"
 #include "ComponentOutputImageOverlayColor.h"
 #include "ComponentOutputImageStatisticsBinary.h"
@@ -185,6 +186,7 @@ THISCLASS::SwisTrackCore(wxString componentconfigurationfolder):
 	mAvailableComponents.push_back(new ComponentOutputParticles(this));
 	mAvailableComponents.push_back(new ComponentOutputParticlesToFile(this));
 	mAvailableComponents.push_back(new ComponentOutputTracksToFiles(this));
+	mAvailableComponents.push_back(new ComponentOutputTracksCSV(this));
 	mAvailableComponents.push_back(new ComponentOutputSQLite(this));
 	mAvailableComponents.push_back(new ComponentOutputFileAVI(this));
 	mAvailableComponents.push_back(new ComponentOutputBufferedFileAVI(this));

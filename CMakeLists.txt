@@ -183,3 +183,31 @@ else()
 	install(DIRECTORY ${SWISTRACK_RUNTIME_DIR}/Components DESTINATION ${CMAKE_INSTALL_DATADIR}/swistrack)
 	install(FILES ${SWISTRACK_RUNTIME_DIR}/default.swistrack DESTINATION ${CMAKE_INSTALL_DATADIR}/swistrack)
 endif()
+
+# --- Tracking benchmark tools (synthetic scenarios, evaluation) ---------------
+option(SWISTRACK_BUILD_BENCHMARK "Build the tracking benchmark tools (swistrack-synth, swistrack-eval)" ON)
+if(SWISTRACK_BUILD_BENCHMARK)
+	add_executable(swistrack-synth Code/tools/SyntheticScenario.cpp)
+	target_include_directories(swistrack-synth SYSTEM PRIVATE ${OpenCV_INCLUDE_DIRS})
+	target_link_libraries(swistrack-synth PRIVATE ${OpenCV_LIBS})
+
+	# Evaluation (no OpenCV / wxWidgets dependency)
+	add_executable(swistrack-eval Code/tools/EvaluateTracking.cpp Code/tools/TrackingMetrics.cpp Code/core/LinearAssignment.cpp)
+	target_include_directories(swistrack-eval PRIVATE Code/core Code/tools)
+	if(SWISTRACK_BUILD_TESTS)
+		add_executable(TestTrackingMetrics Code/tests/TestTrackingMetrics.cpp Code/tools/TrackingMetrics.cpp Code/core/LinearAssignment.cpp)
+		target_include_directories(TestTrackingMetrics PRIVATE Code/core Code/tools)
+		add_test(NAME TrackingMetrics COMMAND TestTrackingMetrics)
+	endif()
+
+	# End-to-end: generate a short scenario, track it with SwisTrack-batch, evaluate
+	if(SWISTRACK_BUILD_TESTS AND SWISTRACK_BUILD_BATCH)
+		add_test(NAME BenchmarkEndToEnd
+			COMMAND ${CMAKE_COMMAND}
+				-DSYNTH=$<TARGET_FILE:swistrack-synth>
+				-DBATCH=$<TARGET_FILE:SwisTrack-batch>
+				-DEVAL=$<TARGET_FILE:swistrack-eval>
+				-DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/benchmark-e2e
+				-P ${CMAKE_CURRENT_SOURCE_DIR}/benchmark/EndToEndTest.cmake)
+	endif()
+endif()
