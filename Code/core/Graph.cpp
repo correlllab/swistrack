@@ -1,4 +1,5 @@
 #include "Graph.h"
+#include <vector>
 #define THISCLASS Graph
 #include <queue>
 using namespace std;
@@ -33,9 +34,7 @@ int THISCLASS::GetMaxConnectedComponents() {
 	list<int> VnuminCC;					// number of vertexes associated to the connected components
 	queue<int> S;
 	int n = Vcount;						// number of vertices in graph
-	bool visited [n];		// flag associated to each vertex
-	for(int i = 1; i < n; i++)
-		visited[i] = false;				// initialization of flags (no visited vertexes)
+	std::vector<char> visited(n, false);	// flag associated to each vertex (no visited vertexes)
 
 	visited[0] = true;
 	S.push(0);
