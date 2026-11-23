@@ -34,7 +34,7 @@
 			<onchange>reload</onchange>
 		</parameter>
 		<title>Splitting</title>
-		<label>A blob of about k times the area of a single object is split into k detections. Set the object area to 0 to learn it from the video (median blob area).</label>
+		<label>Split detections get a confidence between the tracker's high threshold (0.5) and its new-track threshold (0.6): they continue existing tracks, but cannot start new ones. A blob of about k times the area of a single object is split into k detections. Set the object area to 0 to learn it from the video (median blob area).</label>
 		<parameter type="double">
 			<name>ObjectArea</name>
 			<label>Area of one object (0 = learn)</label>
@@ -70,7 +70,7 @@
 			<label>Confidence of split detections</label>
 			<min>0</min>
 			<max>1</max>
-			<default>0.7</default>
+			<default>0.55</default>
 			<slider>true</slider>
 			<sliderstep>0.05</sliderstep>
 			<onchange>reload</onchange>

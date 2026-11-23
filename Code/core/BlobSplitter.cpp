@@ -7,7 +7,7 @@
 #include <opencv2/imgproc.hpp>
 
 THISCLASS::Parameters::Parameters():
-	minArea(10), maxArea(0), objectArea(0), splitRatio(1.6), maxObjectsPerBlob(4), maxNumber(0), splitScore(0.7f) {
+	minArea(10), maxArea(0), objectArea(0), splitRatio(1.6), maxObjectsPerBlob(4), maxNumber(0), splitScore(0.55f) {
 }
 
 THISCLASS::BlobSplitter(): mParameters(), mAreaHistory(), mLabels() {
