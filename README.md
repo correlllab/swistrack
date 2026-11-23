@@ -1,70 +1,81 @@
 # SwisTrack 4.2
 
+[![Build](https://github.com/correlllab/swistrack/actions/workflows/build.yml/badge.svg)](https://github.com/correlllab/swistrack/actions/workflows/build.yml)
+
+SwisTrack is a tool for tracking robots, humans, animals and objects using a camera or a recorded video as input. Tracking pipelines are assembled from components (input, background subtraction, thresholding, blob detection, calibration, tracking, output) in a wxWidgets GUI, and can be run headless with `SwisTrack-batch`.
+
+## History
+
+SwisTrack was developed at EPFL (Distributed Intelligent Systems and Algorithms Laboratory) from 2006 and hosted on [SourceForge](https://sourceforge.net/projects/swistrack/) until 2016. The full SVN history is preserved in this repository. In 2022, Thomas Lochmatter ported it to OpenCV 4 in [d28b/swistrack](https://github.com/d28b/swistrack), which this repository is forked from. This fork adds a CMake build and continuous integration for Linux, macOS and Windows.
+
 ## Documentation
 
-A brief documentation of SwisTrack is available on the [wiki page](https://github.com/d28b/swistrack/wiki).
+- [Wiki](https://github.com/d28b/swistrack/wiki) (SwisTrack 4.2)
+- [SwisTrack Wikibook](https://en.wikibooks.org/wiki/SwisTrack) (original documentation, partly outdated)
 
-## Compiling SwisTrack on Ubuntu/Debian/Raspian
+## Building
 
-To compile and run SwisTrack, open a terminal, and type the following commands:
+SwisTrack needs a C++17 compiler, [CMake](https://cmake.org) 3.16 or newer, [OpenCV](https://opencv.org) 4 or 5, and [wxWidgets](https://wxwidgets.org) 3.0 or newer.
+
+### Ubuntu / Debian / Raspberry Pi OS
 
 ```sh
-# Download the SwisTrack source code
-git clone https://github.com/d28b/swistrack.git
-
-# Install the compiler and libraries
-sudo apt install build-essential
-sudo apt install libglib2.0-dev libwxgtk3.0-gtk3-dev libopencv-dev
-
-# Compile SwisTrack
+sudo apt install build-essential cmake libopencv-dev libwxgtk3.2-dev   # libwxgtk3.0-gtk3-dev on older releases
+git clone https://github.com/correlllab/swistrack.git
 cd swistrack
-make
-
-# Run SwisTrack
-cd SwisTrackEnvironment
-./SwisTrack
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j
+./build/SwisTrack
 ```
 
-Note that compiling may take a few minutes.
-
-## Compiling SwisTrack on other Linux systems
-
-Install the following dependencies using your package manager:
-
-- GLib 2.0
-- wxWidgets (e.g. wxGTK)
-- OpenCV 4
-
-Then proceed using `make`.
-
-## Compiling SwisTrack on Mac OS
-
-Install the following dependencies, e.g. using [brew](https://brew.sh):
-
-- GLib 2.0
-- wxWidgets (e.g. wxGTK)
-- OpenCV 4
-
-Then proceed using:
+### macOS
 
 ```sh
-make osxbundle
+brew install cmake opencv wxwidgets
+git clone https://github.com/correlllab/swistrack.git
+cd swistrack
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j
+open build/SwisTrack.app
 ```
 
-## Compiling SwisTrack on Windows
+### Windows
 
-To build SwisTrack for Windows, proceed as follows:
+Install Visual Studio 2022 (with "Desktop development with C++") and [vcpkg](https://vcpkg.io). The dependencies are declared in `vcpkg.json` and installed automatically during configuration:
 
-- Install Visual Studio 2022. The free version is enough.
-- Download and install OpenCV to C:\OpenCV (or any other folder).
-- Download and install wxWidgets to C:\wxWidgets-3.1.5 (or any other folder).
-- Add the path of OpenCV and wxWidgets to the environment variables:
+```bat
+git clone https://github.com/correlllab/swistrack.git
+cd swistrack
+cmake -S . -B build -A x64 -DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%\scripts\buildsystems\vcpkg.cmake
+cmake --build build --config Release
+build\Release\SwisTrack.exe
+```
+
+The first configuration builds OpenCV and wxWidgets from source, which takes a while.
+
+### Installing
+
+`cmake --install build --prefix <folder>` installs the executables together with the component descriptions (`Components/`) and `default.swistrack`. SwisTrack finds these files in the working directory, next to the executable, in `SwisTrack.app/Contents/Resources` (macOS), in `../share/swistrack` relative to the executable (Linux), or in the folder named by the `SWISTRACK_HOME` environment variable.
+
+### Build options
+
+| Option | Default | Description |
+|---|---|---|
+| `SWISTRACK_BUILD_GUI` | `ON` | Build the GUI application |
+| `SWISTRACK_BUILD_BATCH` | `ON` | Build `SwisTrack-batch` |
+| `SWISTRACK_WITH_SQLITE3` | `OFF` | Build the SQLite3 output component |
+
+The legacy Makefiles (`make`, `make osxbundle`) and the Visual Studio solution in `Code/MSVisualStudio` are still included.
+
+## Example
+
+`Examples/leurre` contains a recorded video of fish with a ready-made tracking pipeline:
 
 ```sh
-setx -m OPENCV_DIR C:\OpenCV\Build\x64\vc15
-setx -m WXWIN C:\wxWidgets-3.1.5
+cd Examples/leurre
+../../build/SwisTrack-batch leurre.swistrack
 ```
 
-- Open the wxWidgets Visual Studio project (C:\wxWidgets-3.1.5\build\msw\wx_vc16.sln) and build the debug and release versions for x64 (and Win32 if desired). This takes several minutes.
-- Open the SwisTrack Visual Studio project (swistrack\Code\MSVisualStudio\SwisTrack.sln) and compile the x64 debug or release version. This takes several minutes.
-- Copy the OpenCV DLLs opencv_world455.dll (release) or opencv_world455d.dll (debug) into the SwisTrackEnvironment folder.
+## License
+
+SwisTrack is distributed under the GNU General Public License v3. See [COPYING](COPYING).
