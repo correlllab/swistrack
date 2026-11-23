@@ -1,4 +1,5 @@
 #include "ImageTools.h"
+#include <opencv2/imgproc.hpp>
 #define THISCLASS ImageTools
 
 cv::Mat THISCLASS::ToRGB(cv::Mat src, char * channelSequence) {

@@ -1,4 +1,5 @@
 #include "DisplayRenderer.h"
+#include <opencv2/imgproc.hpp>
 #define THISCLASS DisplayRenderer
 
 #include "ImageTools.h"

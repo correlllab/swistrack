@@ -1,4 +1,5 @@
 #include "BlobDetection.h"
+#include <opencv2/imgproc.hpp>
 #define THISCLASS BlobDetection
 
 THISCLASS::BlobDetection():

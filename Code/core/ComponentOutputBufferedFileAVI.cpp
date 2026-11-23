@@ -1,4 +1,5 @@
 #include "ComponentOutputBufferedFileAVI.h"
+#include <opencv2/videoio.hpp>
 #define THISCLASS ComponentOutputBufferedFileAVI
 
 #include "DisplayEditor.h"

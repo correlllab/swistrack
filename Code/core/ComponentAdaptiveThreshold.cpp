@@ -1,4 +1,5 @@
 #include "ComponentAdaptiveThreshold.h"
+#include <opencv2/imgproc.hpp>
 #define THISCLASS ComponentAdaptiveThreshold
 
 #include "DisplayEditor.h"

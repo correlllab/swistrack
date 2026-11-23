@@ -1,4 +1,6 @@
 #include "Canvas.h"
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/imgproc.hpp>
 #define THISCLASS Canvas
 
 #include <wx/image.h>

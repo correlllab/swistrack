@@ -1,6 +1,7 @@
 #ifndef HEADER_ComponentInputCameraUSB
 #define HEADER_ComponentInputCameraUSB
 
+#include <opencv2/videoio.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
 #include "Component.h"

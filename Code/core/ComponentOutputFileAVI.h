@@ -1,6 +1,7 @@
 #ifndef HEADER_ComponentOutputFileAVI
 #define HEADER_ComponentOutputFileAVI
 
+#include <opencv2/videoio.hpp>
 #include <vector>
 #include <opencv2/core.hpp>
 #include "Component.h"

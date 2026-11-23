@@ -1,4 +1,5 @@
 #include "ComponentOutputImageOverlayColor.h"
+#include <opencv2/imgcodecs.hpp>
 #define THISCLASS ComponentOutputImageOverlayColor
 
 #include <opencv2/core.hpp>

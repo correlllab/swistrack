@@ -1,4 +1,5 @@
 #include "ComponentOutputFramesImages.h"
+#include <opencv2/imgcodecs.hpp>
 #define THISCLASS ComponentOutputFramesImages
 
 #include "DisplayEditor.h"

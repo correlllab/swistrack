@@ -1,4 +1,5 @@
 #include "ComponentAdaptiveBackgroundSubtractionMedian.h"
+#include <opencv2/imgcodecs.hpp>
 #define THISCLASS ComponentAdaptiveBackgroundSubtractionMedian
 
 #include <opencv2/core.hpp>

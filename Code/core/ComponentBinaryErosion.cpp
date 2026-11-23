@@ -1,4 +1,5 @@
 #include "ComponentBinaryErosion.h"
+#include <opencv2/imgproc.hpp>
 #define THISCLASS ComponentBinaryErosion
 
 #include "DisplayEditor.h"
