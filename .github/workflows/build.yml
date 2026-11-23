@@ -40,7 +40,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-14, macos-15]
+        os: [macos-latest, macos-15-intel]
     steps:
       - uses: actions/checkout@v4
       - name: Install dependencies
@@ -68,18 +68,28 @@ jobs:
       - name: Prepare vcpkg binary cache
         shell: pwsh
         run: New-Item -ItemType Directory -Force -Path "$env:VCPKG_DEFAULT_BINARY_CACHE" | Out-Null
-      - uses: actions/cache@v4
+      - name: Restore vcpkg binary cache
+        id: vcpkg-cache
+        uses: actions/cache/restore@v4
         with:
           path: ${{ github.workspace }}\vcpkg-cache
           key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
           restore-keys: vcpkg-${{ runner.os }}-
       - name: Configure
+        id: configure
         shell: pwsh
         run: >
           cmake -S . -B build -A x64
           -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT\scripts\buildsystems\vcpkg.cmake"
           -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON
           -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}\dist"
+      # Save the vcpkg packages as soon as they are built, even if compiling SwisTrack fails later
+      - name: Save vcpkg binary cache
+        if: always() && steps.configure.outcome == 'success' && steps.vcpkg-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ github.workspace }}\vcpkg-cache
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
       - name: Build
         run: cmake --build build --config Release
       - name: Smoke test
