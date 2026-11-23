@@ -4,8 +4,8 @@ Measures tracking quality objectively: synthetic videos with exact ground truth 
 `SwisTrack-batch`, and the output is scored with standard multi-object tracking metrics.
 
 ```
-swistrack-synth  ->  video.avi, background.png, groundtruth.csv, nn.swistrack, mot.swistrack
-SwisTrack-batch  ->  testing/nn.csv (and testing/mot.csv)         [OutputTracksCSV component]
+swistrack-synth  ->  video.avi, background.png, groundtruth.csv, nn/mot/split/known.swistrack
+SwisTrack-batch  ->  testing/<tracker>.csv         [OutputTracksCSV component]
 swistrack-eval   ->  MOTA, IDF1, HOTA, ...
 ```
 
@@ -21,7 +21,7 @@ benchmark/run_benchmark.sh build --scenarios "fish fast" --frames 300 --keep /tm
 ```
 
 Options: `--frames N`, `--seeds "S1 S2 ..."` (or `--seed S`), `--threshold PX` (match distance, default 10),
-`--scenarios "..."`, `--trackers "nn mot"`, `--codec mjpg|ffv1`, `--keep DIR` (keep videos, logs, CSVs and
+`--scenarios "..."`, `--trackers "nn mot split known"` (nn: NearestNeighborTracking; mot: MultiObjectTracking; split: + BlobDetectionSplitting; known: + known number of objects), `--codec mjpg|ffv1`, `--keep DIR` (keep videos, logs, CSVs and
 per-run `*.metrics.json`; otherwise a temporary folder is used and deleted).
 
 The script prints a markdown table (scenario x tracker: MOTA, IDF1, HOTA, IDSW, FP, FN; means over the seeds)
@@ -115,3 +115,10 @@ one FP, one FN, one ID switch, swapped identities, kept correspondences, optimal
 MT/ML/Frag, merged blobs) and `BenchmarkEndToEnd` (`benchmark/EndToEndTest.cmake`: a 150-frame `fish` scenario
 through swistrack-synth, SwisTrack-batch with NearestNeighborTracking and swistrack-eval; checks MOTA > 0.5,
 IDF1 > 0.3 and MOTP < 1 px, which also catches frame-number or coordinate-convention mismatches).
+
+## Note on partially visible objects
+
+The ground truth lists an object only while at least half of it is visible. `BlobDetectionSplitting` measures
+blob areas by pixel count (slightly larger than the contour area used by `BlobDetectionMinMax`), so it also detects
+objects that are 35-50% visible at the edge of an occluder. These count as false positives in the `occlusion`
+scenario (about 40 per run), although they are real objects.
