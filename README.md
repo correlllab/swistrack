@@ -1,4 +1,4 @@
-# SwisTrack 4.2
+# SwisTrack 4.3
 
 [![Build](https://github.com/correlllab/swistrack/actions/workflows/build.yml/badge.svg)](https://github.com/correlllab/swistrack/actions/workflows/build.yml)
 
@@ -12,6 +12,29 @@ SwisTrack was developed at EPFL (Distributed Intelligent Systems and Algorithms 
 
 - [Wiki](https://github.com/d28b/swistrack/wiki) (SwisTrack 4.2)
 - [SwisTrack Wikibook](https://en.wikibooks.org/wiki/SwisTrack) (original documentation, partly outdated)
+
+## Modern tracking
+
+SwisTrack 4.3 adds a tracking-by-detection stack based on current best practice in multi-object tracking:
+
+| Component | What it does |
+|---|---|
+| **Multi-Object Tracking** (`MultiObjectTracking`) | Kalman filter (constant velocity) per object, optimal (Hungarian) association with Mahalanobis gating, [ByteTrack](https://arxiv.org/abs/2110.06864)-style two-stage association that uses low-confidence detections to bridge partial occlusions, and [OC-SORT](https://arxiv.org/abs/2203.14360)'s direction-consistency cost, recovery from the last observation and filter re-update after occlusions. Tracks go through a tentative → confirmed → lost life cycle. |
+| — *known number of objects* | For experiments with a fixed group size (e.g. 10 fish): set *Max. number of tracks* and enable *Known number of objects*. IDs 0…N−1 are kept for the whole video; lost animals are re-identified instead of getting new IDs. |
+| **Blob Detection (split touching objects)** (`BlobDetectionSplitting`) | Learns the area and shape of a single object, and splits blobs of touching animals into individual detections with a shape-constrained Gaussian mixture (correctly separates animals lying side by side, where k-means fails). |
+| **Adaptive Background Model** (`BackgroundModel`) | MOG2 / KNN background subtraction: no background image needed, adapts to lighting, removes shadows, optional freeze after N frames. |
+| **Marker Detection** (`MarkerDetection`) | AprilTag (36h11, 25h9, 16h5, 36h10) and ArUco markers: ID, position and orientation per marker. Marker IDs become track IDs directly, so robots never swap identities. See [Examples/Markers](Examples/Markers). |
+
+On the `Examples/leurre` video (10 fish, 900 frames), the classic pipeline with `NearestNeighborTracking` produces 49 track fragments. `leurre.modern.swistrack` (blob splitting + multi-object tracking with a known number of objects) tracks all 10 fish in 99.9% of the frames with exactly 10 identities.
+
+A typical pipeline:
+
+```
+InputFileAVI → ConvertInputToGray → BackgroundSubtractionGray / BackgroundModel → ThresholdGray
+  → BlobDetectionSplitting → MultiObjectTracking → OutputTracksToFiles
+```
+
+The tracking algorithms are plain C++ classes without GUI dependencies (`Code/core/MultiObjectTracker`, `BlobSplitter`, `MarkerDetector`, `LinearAssignment`) and have unit tests (`ctest --test-dir build`).
 
 ## Building
 
