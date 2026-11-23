@@ -1,7 +1,7 @@
 #include "Track.h"
 #define THISCLASS Track
 
-THISCLASS::Track(): mID(-1), mTrajectory() {
+THISCLASS::Track(): mID(-1), mTrajectory(), mVelocity(0.0f, 0.0f) {
 }
 
 THISCLASS::~Track() {
