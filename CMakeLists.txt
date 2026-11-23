@@ -170,4 +170,15 @@ if(SWISTRACK_BUILD_BENCHMARK)
 		target_include_directories(TestTrackingMetrics PRIVATE Code/core Code/tools)
 		add_test(NAME TrackingMetrics COMMAND TestTrackingMetrics)
 	endif()
+
+	# End-to-end: generate a short scenario, track it with SwisTrack-batch, evaluate
+	if(SWISTRACK_BUILD_TESTS AND SWISTRACK_BUILD_BATCH)
+		add_test(NAME BenchmarkEndToEnd
+			COMMAND ${CMAKE_COMMAND}
+				-DSYNTH=$<TARGET_FILE:swistrack-synth>
+				-DBATCH=$<TARGET_FILE:SwisTrack-batch>
+				-DEVAL=$<TARGET_FILE:swistrack-eval>
+				-DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/benchmark-e2e
+				-P ${CMAKE_CURRENT_SOURCE_DIR}/benchmark/EndToEndTest.cmake)
+	endif()
 endif()

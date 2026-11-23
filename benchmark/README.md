@@ -107,3 +107,11 @@ about half an object length). Definitions follow the reference implementations; 
 For comparing trackers, look at IDF1, HOTA/AssA and IDSW: on these scenarios detection is almost perfect, so MOTA
 is close to 1 for any tracker and mostly reflects merged blobs and noise. Use several seeds: identity metrics vary
 a lot from one random scenario to another.
+
+## Tests
+
+`ctest --test-dir build` runs `TrackingMetrics` (hand-computed metric values for tiny cases: perfect tracking,
+one FP, one FN, one ID switch, swapped identities, kept correspondences, optimal vs greedy matching, localization,
+MT/ML/Frag, merged blobs) and `BenchmarkEndToEnd` (`benchmark/EndToEndTest.cmake`: a 150-frame `fish` scenario
+through swistrack-synth, SwisTrack-batch with NearestNeighborTracking and swistrack-eval; checks MOTA > 0.5,
+IDF1 > 0.3 and MOTP < 1 px, which also catches frame-number or coordinate-convention mismatches).
