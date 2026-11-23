@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<swistrack>
+  <components>
+    <component type="InputFileAVI">
+      <enabledinterval value="1"/>
+      <parameter name="File" value="video.avi"/>
+    </component>
+    <component type="ConvertInputToColor">
+      <enabledinterval value="1"/>
+    </component>
+    <component type="ObjectDetectionDNN">
+      <enabledinterval value="1"/>
+      <parameter name="ModelFile" value="best.onnx"/>
+      <parameter name="ClassNamesFile" value="classes.txt"/>
+      <parameter name="Format" value="auto"/>
+      <parameter name="InputWidth" value="640"/>
+      <parameter name="InputHeight" value="640"/>
+      <parameter name="ColorOrder" value="auto"/>
+      <parameter name="PixelRange" value="auto"/>
+      <parameter name="Backend" value="cpu"/>
+      <parameter name="MinScore" value="0.1"/>
+      <parameter name="NMSThreshold" value="0.45"/>
+      <parameter name="ClassAwareNMS" value="1"/>
+      <parameter name="MaxDetections" value="300"/>
+      <parameter name="Classes" value=""/>
+      <parameter name="DisplayScoreThreshold" value="0.5"/>
+    </component>
+    <component type="MultiObjectTracking"/>
+    <component type="OutputTracksToFiles">
+      <enabledinterval value="1"/>
+    </component>
+  </components>
+  <server>
+    <port>3000</port>
+  </server>
+</swistrack>
