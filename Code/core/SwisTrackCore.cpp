@@ -52,6 +52,7 @@
 #include "ComponentInvertBinary.h"
 #include "ComponentMarkerDetection.h"
 #include "ComponentMorphology.h"
+#include "ComponentObjectDetectionDNN.h"
 #include "ComponentOutputBufferedFileAVI.h"
 #include "ComponentOutputFileAVI.h"
 #include "ComponentOutputTracksToFiles.h"
@@ -167,6 +168,7 @@ THISCLASS::SwisTrackCore(wxString componentconfigurationfolder):
 	mAvailableComponents.push_back(new ComponentBlobDetectionTwoColors(this));
 	mAvailableComponents.push_back(new ComponentBlobDetectionRedGreen(this));
 	mAvailableComponents.push_back(new ComponentBlobDetectionCircularHough(this));
+	mAvailableComponents.push_back(new ComponentObjectDetectionDNN(this));
 	mAvailableComponents.push_back(new ComponentIDReaderRing(this));
 	mAvailableComponents.push_back(new ComponentMarkerDetection(this));
 	mAvailableComponents.push_back(new ComponentSimulationParticles(this));

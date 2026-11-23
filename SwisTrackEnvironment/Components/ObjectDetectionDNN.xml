@@ -1,0 +1,137 @@
+<?xml version="1.0"?>
+<swistrackcomponent>
+	<friendlyname>Object Detection (Deep Learning, ONNX)</friendlyname>
+	<description>Detects objects with a deep learning model (YOLOv8/YOLO11, YOLOv5/YOLOv7 or YOLOX exported to ONNX) on the color image (or the input image), and stores them as particles with bounding boxes and confidence scores. See Examples/DeepLearning/README.md for how to train and export a model.</description>
+	<url>https://github.com/correlllab/swistrack/tree/master/Examples/DeepLearning</url>
+	<displayimage>Output</displayimage>
+
+	<configuration>
+		<parameter type="inputfile">
+			<name>ModelFile</name>
+			<label>Model (ONNX)</label>
+			<filefilter>ONNX models|*.onnx|All files|*.*</filefilter>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="dropdownlist">
+			<name>Format</name>
+			<label>Model family</label>
+			<items>
+				<item key="auto">Auto (from output shape)</item>
+				<item key="yolov8">YOLOv8/YOLO11 (Ultralytics)</item>
+				<item key="yolov5">YOLOv5/YOLOv7</item>
+				<item key="yolox">YOLOX</item>
+			</items>
+			<default>auto</default>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="integer">
+			<name>InputWidth</name>
+			<label>Input width</label>
+			<min>32</min>
+			<max>4096</max>
+			<default>640</default>
+			<unit>pixels</unit>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="integer">
+			<name>InputHeight</name>
+			<label>Input height</label>
+			<min>32</min>
+			<max>4096</max>
+			<default>640</default>
+			<unit>pixels</unit>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="dropdownlist">
+			<name>ColorOrder</name>
+			<label>Channel order</label>
+			<items>
+				<item key="auto">Auto (BGR for YOLOX, RGB otherwise)</item>
+				<item key="rgb">RGB</item>
+				<item key="bgr">BGR</item>
+			</items>
+			<default>auto</default>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="dropdownlist">
+			<name>PixelRange</name>
+			<label>Pixel values</label>
+			<items>
+				<item key="auto">Auto (0..255 for YOLOX, 0..1 otherwise)</item>
+				<item key="unit">0..1 (divided by 255)</item>
+				<item key="byte">0..255 (unnormalized)</item>
+			</items>
+			<default>auto</default>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="dropdownlist">
+			<name>Backend</name>
+			<label>Run on</label>
+			<items>
+				<item key="cpu">OpenCV (CPU)</item>
+				<item key="opencl">OpenCL</item>
+				<item key="opencl_fp16">OpenCL (FP16)</item>
+				<item key="cuda">CUDA</item>
+				<item key="cuda_fp16">CUDA (FP16)</item>
+			</items>
+			<default>cpu</default>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="double">
+			<name>MinScore</name>
+			<label>Min. score</label>
+			<min>0</min>
+			<max>1</max>
+			<default>0.1</default>
+			<slider>true</slider>
+			<sliderstep>0.01</sliderstep>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="double">
+			<name>NMSThreshold</name>
+			<label>NMS IoU threshold</label>
+			<min>0</min>
+			<max>1</max>
+			<default>0.45</default>
+			<slider>true</slider>
+			<sliderstep>0.01</sliderstep>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="checkbox">
+			<name>ClassAwareNMS</name>
+			<label>NMS per class</label>
+			<default>1</default>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="integer">
+			<name>MaxDetections</name>
+			<label>Max. detections</label>
+			<min>0</min>
+			<max>10000</max>
+			<default>300</default>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="string">
+			<name>Classes</name>
+			<label>Classes (e.g. 0, 2)</label>
+			<default></default>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="inputfile">
+			<name>ClassNamesFile</name>
+			<label>Class names (one per line)</label>
+			<filefilter>Text files|*.txt;*.names|All files|*.*</filefilter>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="double">
+			<name>DisplayScoreThreshold</name>
+			<label>Highlight score (display)</label>
+			<min>0</min>
+			<max>1</max>
+			<default>0.5</default>
+			<slider>true</slider>
+			<sliderstep>0.01</sliderstep>
+			<onchange>reload</onchange>
+		</parameter>
+	</configuration>
+</swistrackcomponent>
