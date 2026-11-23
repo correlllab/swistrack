@@ -288,6 +288,38 @@ static void TestConfigHelpers() {
 	CHECK(! DD::ReadClassNames("does/not/exist.txt", names));
 }
 
+static void TestTileRects() {
+	// No tiling: one rectangle covering the image
+	auto single = ObjectDetectorDNN::TileRects(cv::Size(768, 576), 1, 1, 0.25f);
+	CHECK(single.size() == 1 && single[0] == cv::Rect(0, 0, 768, 576));
+
+	for (int tx = 1; tx <= 4; tx++) {
+		for (int ty = 1; ty <= 3; ty++) {
+			const cv::Size size(1280, 720);
+			const float overlap = 0.25f;
+			auto tiles = ObjectDetectorDNN::TileRects(size, tx, ty, overlap);
+			CHECK((int)tiles.size() == tx * ty);
+			// Inside the image, covering it, equal sizes
+			cv::Mat covered = cv::Mat::zeros(size, CV_8U);
+			for (auto & t : tiles) {
+				CHECK(t.x >= 0 && t.y >= 0 && t.br().x <= size.width && t.br().y <= size.height);
+				CHECK(t.size() == tiles[0].size());
+				covered(t) = 1;
+			}
+			CHECK(cv::countNonZero(covered) == size.area());
+			// Neighbors overlap by about the requested fraction
+			if (tx > 1) {
+				int o = tiles[0].br().x - tiles[1].x;
+				CHECK(std::abs(o - overlap * tiles[0].width) <= 2);
+			}
+			if (ty > 1) {
+				int o = tiles[0].br().y - tiles[tx].y;
+				CHECK(std::abs(o - overlap * tiles[0].height) <= 2);
+			}
+		}
+	}
+}
+
 static void TestLoadErrors() {
 	std::printf("Load errors\n");
 	DD detector;
@@ -311,6 +343,7 @@ int main() {
 	TestLetterbox();
 	TestInferFormat();
 	TestConfigHelpers();
+	TestTileRects();
 	TestLoadErrors();
 
 	const int n = 8400;			// Anchor-free models, 640x640: 80*80 + 40*40 + 20*20

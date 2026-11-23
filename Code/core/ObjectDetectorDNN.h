@@ -92,6 +92,10 @@ public:
 		bool classAware = true;			//!< Suppress only boxes of the same class.
 		int maxDetections = 300;		//!< Maximum number of detections kept after NMS (0 = unlimited).
 		std::vector<int> classes;		//!< Classes to keep (empty = all).
+		int tilesX = 1;					//!< Tiled inference (for small objects): number of tile columns.
+		int tilesY = 1;					//!< Tiled inference: number of tile rows.
+		float tileOverlap = 0.25f;		//!< Tiled inference: overlap between neighboring tiles (fraction of the tile size).
+		bool tileFullImage = true;		//!< Tiled inference: also run the model on the full image (for large objects).
 	};
 
 	//! Model configuration.
@@ -118,6 +122,13 @@ public:
 	bool IsLoaded() const;
 
 	//! Detects objects on an 8-bit image (1, 3 or 4 channels, BGR). Detections are in original image coordinates, sorted by decreasing score.
+	/*!
+		With more than one tile (thresholds.tilesX/tilesY), the image is processed in overlapping tiles at full model
+		resolution, which finds much smaller objects (as in SAHI, slicing aided hyper inference). Detections cut off at
+		an inner tile border are dropped (the object is fully contained in a neighboring tile if it is smaller than the
+		overlap), the full image is optionally processed as well (for large objects), and all detections go through a
+		common non-maximum suppression.
+	*/
 	bool Detect(const cv::Mat & image, const Thresholds & thresholds, std::vector<Detection> & detections, std::string & error);
 
 	//! Output format (resolved, never FormatAuto once loaded).
@@ -136,6 +147,9 @@ public:
 	const Config & GetConfig() const { return mConfig; }
 
 	// --- Building blocks (static, also used by the unit tests) ---
+
+	//! Returns the tile rectangles for an image size (one rectangle covering the image if not tiled).
+	static std::vector<cv::Rect> TileRects(cv::Size imageSize, int tilesX, int tilesY, float overlap);
 
 	//! Returns a human-readable name of a format.
 	static const char * FormatName(Format format);
@@ -164,6 +178,8 @@ public:
 
 private:
 	struct Impl;
+	//! Detects objects on one BGR image (or tile), with NMS. Adds the inference time to inferenceMs.
+	bool DetectSingle(const cv::Mat & bgr, const Thresholds & thresholds, std::vector<Detection> & detections, double & inferenceMs, std::string & error);
 	std::unique_ptr<Impl> mImpl;
 	Config mConfig;
 	Format mFormat;

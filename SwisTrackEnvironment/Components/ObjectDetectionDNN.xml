@@ -133,5 +133,39 @@
 			<sliderstep>0.01</sliderstep>
 			<onchange>reload</onchange>
 		</parameter>
+		<title>Small objects (tiled inference)</title>
+		<label>Small objects are hard to detect once the image is scaled down to the model input size. With tiles, the image is processed in overlapping parts at full model resolution (slower: one inference per tile). The overlap should be larger than the objects.</label>
+		<parameter type="integer">
+			<name>TilesX</name>
+			<label>Tile columns</label>
+			<min>1</min>
+			<max>8</max>
+			<default>1</default>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="integer">
+			<name>TilesY</name>
+			<label>Tile rows</label>
+			<min>1</min>
+			<max>8</max>
+			<default>1</default>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="double">
+			<name>TileOverlap</name>
+			<label>Tile overlap</label>
+			<min>0</min>
+			<max>0.75</max>
+			<default>0.25</default>
+			<slider>true</slider>
+			<sliderstep>0.05</sliderstep>
+			<onchange>reload</onchange>
+		</parameter>
+		<parameter type="checkbox">
+			<name>TileFullImage</name>
+			<label>Also process the full image (large objects)</label>
+			<default>1</default>
+			<onchange>reload</onchange>
+		</parameter>
 	</configuration>
 </swistrackcomponent>

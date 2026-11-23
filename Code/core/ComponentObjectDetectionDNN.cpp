@@ -45,6 +45,10 @@ void THISCLASS::OnReloadConfiguration() {
 	mThresholds.nmsIoU = (float)std::min(std::max(GetConfigurationDouble(wxT("NMSThreshold"), 0.45), 0.0), 1.0);
 	mThresholds.classAware = GetConfigurationBool(wxT("ClassAwareNMS"), true);
 	mThresholds.maxDetections = std::max(GetConfigurationInt(wxT("MaxDetections"), 300), 0);
+	mThresholds.tilesX = std::min(std::max(GetConfigurationInt(wxT("TilesX"), 1), 1), 8);
+	mThresholds.tilesY = std::min(std::max(GetConfigurationInt(wxT("TilesY"), 1), 1), 8);
+	mThresholds.tileOverlap = (float)std::min(std::max(GetConfigurationDouble(wxT("TileOverlap"), 0.25), 0.0), 0.75);
+	mThresholds.tileFullImage = GetConfigurationBool(wxT("TileFullImage"), true);
 	mDisplayScoreThreshold = (float)GetConfigurationDouble(wxT("DisplayScoreThreshold"), 0.5);
 	wxString classes = GetConfigurationString(wxT("Classes"), wxT(""));
 	if (! ObjectDetectorDNN::ParseClassList(classes.ToStdString(), mThresholds.classes)) {

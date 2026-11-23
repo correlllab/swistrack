@@ -554,6 +554,57 @@ bool THISCLASS::Load(const Config & config, std::string & error, std::vector<std
 #endif
 }
 
+#if SWISTRACK_HAVE_DNN
+bool THISCLASS::DetectSingle(const cv::Mat & bgr, const Thresholds & thresholds, std::vector<Detection> & detections, double & inferenceMs, std::string & error) {
+	Impl & impl = *mImpl;
+	detections.clear();
+	Letterbox letterbox = Letterbox::Compute(bgr.size(), mConfig.inputSize, mFormat != FormatYOLOX);
+	LetterboxImage(bgr, impl.letterboxed, letterbox);
+	cv::dnn::blobFromImage(impl.letterboxed, impl.blob, mPixelScale, cv::Size(), cv::Scalar(), mSwapRB, false, CV_32F);
+
+	// Inference
+	cv::TickMeter inference;
+	try {
+		inference.start();
+		impl.net.setInput(impl.blob);
+		impl.net.forward(impl.outputs, impl.outputNames);
+		inference.stop();
+	} catch (const cv::Exception & e) {
+		error = std::string("Inference failed: ") + e.what();
+		return false;
+	}
+	inferenceMs += inference.getTimeMilli();
+	if (impl.outputIndex >= (int)impl.outputs.size()) {
+		error = "The model did not produce the expected output.";
+		return false;
+	}
+
+	// Postprocessing
+	if (! Decode(impl.outputs[impl.outputIndex], mFormat, mConfig.inputSize, thresholds, detections, error)) return false;
+	NonMaximumSuppression(detections, thresholds);
+	MapToOriginal(detections, letterbox);
+	return true;
+}
+#endif
+
+std::vector<cv::Rect> THISCLASS::TileRects(cv::Size imageSize, int tilesX, int tilesY, float overlap) {
+	std::vector<cv::Rect> tiles;
+	tilesX = std::max(1, tilesX);
+	tilesY = std::max(1, tilesY);
+	overlap = std::min(std::max(overlap, 0.0f), 0.9f);
+	// n tiles of width w with overlap o*w cover W = w * (n - (n - 1) * o)
+	const int w = (int)std::ceil(imageSize.width / (tilesX - (tilesX - 1) * overlap));
+	const int h = (int)std::ceil(imageSize.height / (tilesY - (tilesY - 1) * overlap));
+	for (int ty = 0; ty < tilesY; ty++) {
+		for (int tx = 0; tx < tilesX; tx++) {
+			int x = tilesX == 1 ? 0 : (int)std::lround((double)(imageSize.width - w) * tx / (tilesX - 1));
+			int y = tilesY == 1 ? 0 : (int)std::lround((double)(imageSize.height - h) * ty / (tilesY - 1));
+			tiles.push_back(cv::Rect(x, y, std::min(w, imageSize.width - x), std::min(h, imageSize.height - y)));
+		}
+	}
+	return tiles;
+}
+
 bool THISCLASS::Detect(const cv::Mat & image, const Thresholds & thresholds, std::vector<Detection> & detections, std::string & error) {
 	detections.clear();
 	if (! mImpl->loaded) {
@@ -587,31 +638,35 @@ bool THISCLASS::Detect(const cv::Mat & image, const Thresholds & thresholds, std
 		error = "Unsupported number of image channels.";
 		return false;
 	}
-	Letterbox letterbox = Letterbox::Compute(bgr->size(), mConfig.inputSize, mFormat != FormatYOLOX);
-	LetterboxImage(*bgr, impl.letterboxed, letterbox);
-	cv::dnn::blobFromImage(impl.letterboxed, impl.blob, mPixelScale, cv::Size(), cv::Scalar(), mSwapRB, false, CV_32F);
-
-	// Inference
-	cv::TickMeter inference;
-	try {
-		inference.start();
-		impl.net.setInput(impl.blob);
-		impl.net.forward(impl.outputs, impl.outputNames);
-		inference.stop();
-	} catch (const cv::Exception & e) {
-		error = std::string("Inference failed: ") + e.what();
-		return false;
+	const std::vector<cv::Rect> tiles = TileRects(bgr->size(), thresholds.tilesX, thresholds.tilesY, thresholds.tileOverlap);
+	double inferenceMs = 0;
+	if (tiles.size() <= 1) {
+		if (! DetectSingle(*bgr, thresholds, detections, inferenceMs, error)) return false;
+	} else {
+		const cv::Rect bounds(0, 0, bgr->cols, bgr->rows);
+		std::vector<Detection> tileDetections;
+		for (const cv::Rect & tile : tiles) {
+			if (! DetectSingle((*bgr)(tile), thresholds, tileDetections, inferenceMs, error)) return false;
+			for (Detection d : tileDetections) {
+				d.box.x += tile.x;
+				d.box.y += tile.y;
+				// Drop boxes cut off at an inner tile border: the object is (more) fully visible in a neighboring tile
+				const float margin = 2.0f;
+				bool cutLeft = tile.x > bounds.x && d.box.x <= tile.x + margin;
+				bool cutTop = tile.y > bounds.y && d.box.y <= tile.y + margin;
+				bool cutRight = tile.br().x < bounds.br().x && d.box.br().x >= tile.br().x - margin;
+				bool cutBottom = tile.br().y < bounds.br().y && d.box.br().y >= tile.br().y - margin;
+				if (cutLeft || cutTop || cutRight || cutBottom) continue;
+				detections.push_back(d);
+			}
+		}
+		if (thresholds.tileFullImage) {
+			if (! DetectSingle(*bgr, thresholds, tileDetections, inferenceMs, error)) return false;
+			detections.insert(detections.end(), tileDetections.begin(), tileDetections.end());
+		}
+		NonMaximumSuppression(detections, thresholds);
 	}
-	mLastInferenceMs = inference.getTimeMilli();
-	if (impl.outputIndex >= (int)impl.outputs.size()) {
-		error = "The model did not produce the expected output.";
-		return false;
-	}
-
-	// Postprocessing
-	if (! Decode(impl.outputs[impl.outputIndex], mFormat, mConfig.inputSize, thresholds, detections, error)) return false;
-	NonMaximumSuppression(detections, thresholds);
-	MapToOriginal(detections, letterbox);
+	mLastInferenceMs = inferenceMs;
 
 	total.stop();
 	mLastTotalMs = total.getTimeMilli();
