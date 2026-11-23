@@ -15,7 +15,8 @@ option(SWISTRACK_BUILD_BATCH "Build the SwisTrack-batch command line tool" ON)
 option(SWISTRACK_WITH_SQLITE3 "Build the SQLite3 output component" OFF)
 option(SWISTRACK_BUILD_TESTS "Build the unit tests" ON)
 
-find_package(OpenCV REQUIRED COMPONENTS core imgproc imgcodecs videoio highgui video)
+# OpenCV 5 moved the contour geometry functions into the geometry module
+find_package(OpenCV REQUIRED COMPONENTS core imgproc imgcodecs videoio highgui video OPTIONAL_COMPONENTS geometry)
 
 set(SWISTRACK_WX_COMPONENTS xml base)
 if(SWISTRACK_BUILD_GUI)
