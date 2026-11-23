@@ -3,6 +3,7 @@
 
 #include <opencv2/imgproc.hpp>
 #include <algorithm>
+#include <cstdio>
 #include <wx/filename.h>
 #include "DisplayEditor.h"
 
