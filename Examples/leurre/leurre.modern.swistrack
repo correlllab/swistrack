@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<swistrack>
+  <components>
+    <component type="InputFileAVI">
+      <parameter name="File" value="leurre.avi"/>
+    </component>
+    <component type="ConvertInputToColor"/>
+    <component type="BackgroundSubtractionColor">
+      <parameter name="BackgroundImage" value="background.bmp"/>
+      <parameter name="CorrectMean" value="false"/>
+    </component>
+    <component type="ConvertColorToGray">
+      <parameter name="Channel" value="-1"/>
+    </component>
+    <component type="ThresholdGray">
+      <parameter name="InvertThreshold" value="false"/>
+      <parameter name="Threshold" value="28"/>
+    </component>
+    <component type="BinaryMask">
+      <parameter name="MaskImage" value="mask.bmp"/>
+    </component>
+    <component type="BinaryErosion">
+      <parameter name="Iterations" value=""/>
+    </component>
+    <component type="BinaryDilation">
+      <parameter name="Iterations" value="1"/>
+    </component>
+    <component type="BinaryErosion">
+      <parameter name="Iterations" value="1"/>
+    </component>
+    <component type="BlobDetectionSplitting">
+      <parameter name="MinArea" value="10"/>
+      <parameter name="MaxArea" value="400"/>
+    </component>
+    <component type="CalibrationTSAI">
+      <parameter name="CalibrationPoints" value="calibrationPoints.xml"/>
+      <parameter name="Ncx" value=""/>
+      <parameter name="Ncy" value=""/>
+      <parameter name="Nfx" value=""/>
+      <parameter name="Nfy" value=""/>
+      <parameter name="dx" value=""/>
+      <parameter name="dy" value=""/>
+      <parameter name="sx" value=""/>
+    </component>
+    <component type="MultiObjectTracking">
+      <parameter name="MaxNumberOfTracks" value="10"/>
+      <parameter name="FixedNumberOfObjects" value="true"/>
+    </component>
+    <component type="OutputTracksToFiles"/>
+  </components>
+  <server>
+    <port>3000</port>
+  </server>
+</swistrack>

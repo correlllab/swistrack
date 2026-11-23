@@ -15,7 +15,7 @@ option(SWISTRACK_BUILD_BATCH "Build the SwisTrack-batch command line tool" ON)
 option(SWISTRACK_WITH_SQLITE3 "Build the SQLite3 output component" OFF)
 option(SWISTRACK_BUILD_TESTS "Build the unit tests" ON)
 
-find_package(OpenCV REQUIRED COMPONENTS core imgproc imgcodecs videoio highgui)
+find_package(OpenCV REQUIRED COMPONENTS core imgproc imgcodecs videoio highgui video)
 
 set(SWISTRACK_WX_COMPONENTS xml base)
 if(SWISTRACK_BUILD_GUI)
@@ -123,6 +123,11 @@ if(SWISTRACK_BUILD_TESTS)
 	target_include_directories(TestMultiObjectTracker SYSTEM PRIVATE ${OpenCV_INCLUDE_DIRS})
 	target_link_libraries(TestMultiObjectTracker PRIVATE opencv_core)
 	add_test(NAME MultiObjectTracker COMMAND TestMultiObjectTracker)
+	add_executable(TestBlobSplitter Code/tests/TestBlobSplitter.cpp Code/core/BlobSplitter.cpp)
+	target_include_directories(TestBlobSplitter PRIVATE Code/core)
+	target_include_directories(TestBlobSplitter SYSTEM PRIVATE ${OpenCV_INCLUDE_DIRS})
+	target_link_libraries(TestBlobSplitter PRIVATE opencv_core opencv_imgproc)
+	add_test(NAME BlobSplitter COMMAND TestBlobSplitter)
 endif()
 
 # --- Install ----------------------------------------------------------------

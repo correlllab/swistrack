@@ -8,12 +8,14 @@
 #include "ComponentAdaptiveThreshold.h"
 #include "ComponentBackgroundSubtractionColor.h"
 #include "ComponentBackgroundSubtractionGray.h"
+#include "ComponentBackgroundModel.h"
 #include "ComponentBinaryBlur.h"
 #include "ComponentBinaryDilation.h"
 #include "ComponentBinaryErosion.h"
 #include "ComponentBinaryMask.h"
 #include "ComponentBlobDetectionCircularHough.h"
 #include "ComponentBlobDetectionMinMax.h"
+#include "ComponentBlobDetectionSplitting.h"
 #include "ComponentBlobDetectionRedGreen.h"
 #include "ComponentBlobDetectionTwoColors.h"
 #include "ComponentCalibrationFileTSAI.h"
@@ -139,6 +141,7 @@ THISCLASS::SwisTrackCore(wxString componentconfigurationfolder):
 	mAvailableComponents.push_back(new ComponentChannelCalculationGray(this));
 	mAvailableComponents.push_back(new ComponentBackgroundSubtractionGray(this));
 	mAvailableComponents.push_back(new ComponentAdaptiveBackgroundSubtractionGray(this));
+	mAvailableComponents.push_back(new ComponentBackgroundModel(this));
 	mAvailableComponents.push_back(new ComponentGrayMask(this));
 	mAvailableComponents.push_back(new ComponentConvertGrayToColor(this));
 	mAvailableComponents.push_back(new ComponentThresholdGray(this));
@@ -158,6 +161,7 @@ THISCLASS::SwisTrackCore(wxString componentconfigurationfolder):
 
 	// Particle Detection
 	mAvailableComponents.push_back(new ComponentBlobDetectionMinMax(this));
+	mAvailableComponents.push_back(new ComponentBlobDetectionSplitting(this));
 	mAvailableComponents.push_back(new ComponentBlobDetectionTwoColors(this));
 	mAvailableComponents.push_back(new ComponentBlobDetectionRedGreen(this));
 	mAvailableComponents.push_back(new ComponentBlobDetectionCircularHough(this));
