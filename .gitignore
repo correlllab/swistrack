@@ -1,0 +1,9 @@
+build/
+build-*/
+*.o
+*.a
+*.d
+SwisTrackEnvironment/SwisTrack
+SwisTrackEnvironment/SwisTrack-batch
+SwisTrackEnvironment/SwisTrack.app/
+.DS_Store

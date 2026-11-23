@@ -1,4 +1,5 @@
 #include "ComponentConvertColorToGray.h"
+#include <opencv2/imgproc.hpp>
 #define THISCLASS ComponentConvertColorToGray
 
 #include "DisplayEditor.h"

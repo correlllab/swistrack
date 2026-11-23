@@ -1,3 +1,2 @@
-int lmdif_(fcn, m, n, x, fvec, ftol, xtol, gtol, maxfev, 
-	epsfcn, diag, mode, factor, nprint, info, nfev, fjac, ldfjac, ipvt, 
-	qtf, wa1, wa2, wa3, wa4);
+/* Old-style (unprototyped) declaration; lmdif.c is an f2c translation with a K&R definition. */
+int lmdif_();

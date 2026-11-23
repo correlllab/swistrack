@@ -1,4 +1,8 @@
 #include "BlobDetection.h"
+#include <opencv2/imgproc.hpp>
+#if __has_include(<opencv2/geometry.hpp>)
+#include <opencv2/geometry.hpp>	// OpenCV 5 moved moments, arcLength, contourArea, ... here
+#endif
 #define THISCLASS BlobDetection
 
 THISCLASS::BlobDetection():

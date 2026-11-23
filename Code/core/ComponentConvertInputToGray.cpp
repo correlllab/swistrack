@@ -1,4 +1,5 @@
 #include "ComponentConvertInputToGray.h"
+#include <opencv2/imgproc.hpp>
 #define THISCLASS ComponentConvertInputToGray
 
 #include "DisplayEditor.h"

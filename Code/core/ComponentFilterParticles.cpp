@@ -1,4 +1,5 @@
 #include "ComponentFilterParticles.h"
+#include <opencv2/imgproc.hpp>
 #define THISCLASS ComponentFilterParticles
 
 #include "DisplayEditor.h"

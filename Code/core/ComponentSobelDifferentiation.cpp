@@ -1,4 +1,5 @@
 #include "ComponentSobelDifferentiation.h"
+#include <opencv2/imgproc.hpp>
 #define THISCLASS ComponentSobelDifferentiation
 
 #include "DisplayEditor.h"

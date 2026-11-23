@@ -1,4 +1,5 @@
 #include "Component.h"
+#include <opencv2/imgcodecs.hpp>
 #include <sstream>
 #include <cctype>
 #include <algorithm>

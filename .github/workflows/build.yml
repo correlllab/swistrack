@@ -1,0 +1,103 @@
+name: Build
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  linux:
+    name: Linux (Ubuntu ${{ matrix.ubuntu }})
+    runs-on: ubuntu-${{ matrix.ubuntu }}
+    strategy:
+      fail-fast: false
+      matrix:
+        ubuntu: ["22.04", "24.04"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          if [ "${{ matrix.ubuntu }}" = "22.04" ]; then WX=libwxgtk3.0-gtk3-dev; else WX=libwxgtk3.2-dev; fi
+          sudo apt-get install -y build-essential cmake ninja-build libopencv-dev $WX
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$PWD/dist
+      - name: Build
+        run: cmake --build build
+      - name: Smoke test
+        run: ./build/SwisTrack-batch | grep -q "Usage"
+      - name: Install
+        run: cmake --install build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: swistrack-linux-ubuntu${{ matrix.ubuntu }}
+          path: dist
+
+  macos:
+    name: macOS (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, macos-15-intel]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: brew install opencv wxwidgets ninja
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$PWD/dist
+      - name: Build
+        run: cmake --build build
+      - name: Smoke test
+        run: ./build/SwisTrack-batch | grep -q "Usage"
+      - name: Install
+        run: cmake --install build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: swistrack-${{ matrix.os }}
+          path: dist
+
+  windows:
+    name: Windows (MSVC + vcpkg)
+    runs-on: windows-2022
+    env:
+      VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}\vcpkg-cache
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare vcpkg binary cache
+        shell: pwsh
+        run: New-Item -ItemType Directory -Force -Path "$env:VCPKG_DEFAULT_BINARY_CACHE" | Out-Null
+      - name: Restore vcpkg binary cache
+        id: vcpkg-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ github.workspace }}\vcpkg-cache
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+          restore-keys: vcpkg-${{ runner.os }}-
+      - name: Configure
+        id: configure
+        shell: pwsh
+        run: >
+          cmake -S . -B build -A x64
+          -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT\scripts\buildsystems\vcpkg.cmake"
+          -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON
+          -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}\dist"
+      # Save the vcpkg packages as soon as they are built, even if compiling SwisTrack fails later
+      - name: Save vcpkg binary cache
+        if: always() && steps.configure.outcome == 'success' && steps.vcpkg-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ github.workspace }}\vcpkg-cache
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+      - name: Build
+        run: cmake --build build --config Release
+      - name: Smoke test
+        shell: bash
+        run: ./build/Release/SwisTrack-batch.exe | grep -q "Usage"
+      - name: Install
+        run: cmake --install build --config Release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: swistrack-windows-x64
+          path: dist

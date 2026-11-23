@@ -7,6 +7,7 @@
 #include "ConfigurationReaderXML.h"
 #include "SwisTrackCore.h"
 #include "Random.h"
+#include "RuntimeFolder.h"
 
 IMPLEMENT_APP(Application)
 
@@ -15,8 +16,8 @@ bool THISCLASS::OnInit() {
 	SetVendorName(wxT("SwisTrack Community"));
 	SetAppName(wxT("SwisTrack"));
 
-	// Take the current directory as the application folder
-	mApplicationFolder = wxGetCwd();
+	// Locate the folder with the component descriptions and the default configuration
+	mApplicationFolder = FindRuntimeFolder();
 
 	// Initialize the random number generator
 	Random::Initialize();

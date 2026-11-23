@@ -1,4 +1,5 @@
 #include "ConfigurationParameterVideoFormat.h"
+#include <opencv2/videoio.hpp>
 #define THISCLASS ConfigurationParameterVideoFormat
 
 #include <wx/sizer.h>

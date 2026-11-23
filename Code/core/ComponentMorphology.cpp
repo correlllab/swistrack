@@ -1,4 +1,5 @@
 #include "ComponentMorphology.h"
+#include <opencv2/imgproc.hpp>
 #define THISCLASS ComponentMorphology
 
 #include "DisplayEditor.h"

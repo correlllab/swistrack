@@ -1,4 +1,5 @@
 #include "ComponentBlobDetectionCircularHough.h"
+#include <opencv2/imgproc.hpp>
 #define THISCLASS ComponentBlobDetectionCircularHough
 
 #include "DisplayEditor.h"

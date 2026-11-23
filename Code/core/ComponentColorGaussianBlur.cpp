@@ -1,4 +1,5 @@
 #include "ComponentColorGaussianBlur.h"
+#include <opencv2/imgproc.hpp>
 #define THISCLASS ComponentColorGaussianBlur
 
 #include <opencv2/highgui.hpp>

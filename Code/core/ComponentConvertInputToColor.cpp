@@ -1,4 +1,5 @@
 #include "ComponentConvertInputToColor.h"
+#include <opencv2/imgproc.hpp>
 #define THISCLASS ComponentConvertInputToColor
 
 #include "DisplayEditor.h"
