@@ -2,6 +2,7 @@
 #include "LinearAssignment.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cfloat>
 #include <cmath>
 #include <fstream>
@@ -9,6 +10,7 @@
 #include <map>
 #include <set>
 #include <sstream>
+#include <stdexcept>
 
 namespace TrackingMetrics {
 
