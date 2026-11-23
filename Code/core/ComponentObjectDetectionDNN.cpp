@@ -69,6 +69,12 @@ void THISCLASS::OnReloadConfiguration() {
 		return;
 	}
 	wxFileName modelFileName = mCore->GetProjectFileName(modelFile);
+	if (! modelFileName.IsOk()) {
+		mDetector.Unload();
+		mLoadedModelKey.Clear();
+		AddError(wxT("Invalid model file name. To use a relative path, save the configuration first."));
+		return;
+	}
 	if (! modelFileName.FileExists()) {
 		mDetector.Unload();
 		mLoadedModelKey.Clear();
