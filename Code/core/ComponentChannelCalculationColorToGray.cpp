@@ -46,7 +46,7 @@ void THISCLASS::OnReloadConfiguration() {
 
 	std::string parseError = mContext->Parse(expression.ToStdString());
 	if (! parseError.empty())
-		return AddError(wxT("Parse error: ") + parseError);
+		return AddError(wxT("Parse error: ") + wxString(parseError));
 
 	mOutput = mContext->GetNode("out");
 	if (! mOutput)
@@ -54,7 +54,7 @@ void THISCLASS::OnReloadConfiguration() {
 
 	std::string typeError = mOutput->Prepare();
 	if (! typeError.empty())
-		return AddError(wxT("Type error: ") + typeError);
+		return AddError(wxT("Type error: ") + wxString(typeError));
 }
 
 void THISCLASS::OnStep() {

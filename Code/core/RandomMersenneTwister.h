@@ -201,7 +201,7 @@ inline RandomMersenneTwister::uint32 RandomMersenneTwister::randInt() {
 	if ( left == 0 ) reload();
 	--left;
 
-	register uint32 s1;
+	uint32 s1;
 	s1 = *pNext++;
 	s1 ^= (s1 >> 11);
 	s1 ^= (s1 <<  7) & 0x9d2c5680UL;
@@ -242,9 +242,9 @@ inline void RandomMersenneTwister::seed( uint32 * const bigSeed, const uint32 se
 	// in each element are discarded.
 	// Just call seed() if you want to get array from /dev/urandom
 	initialize(19650218UL);
-	register int i = 1;
-	register uint32 j = 0;
-	register int k = ( N > seedLength ? N : seedLength );
+	int i = 1;
+	uint32 j = 0;
+	int k = ( N > seedLength ? N : seedLength );
 	for ( ; k; --k ) {
 		state[i] =
 		    state[i] ^ ( (state[i - 1] ^ (state[i - 1] >> 30)) * 1664525UL );
@@ -282,9 +282,9 @@ inline void RandomMersenneTwister::seed() {
 	FILE * urandom = fopen( "/dev/urandom", "rb" );
 	if ( urandom ) {
 		uint32 bigSeed[N];
-		register uint32 * s = bigSeed;
-		register int i = N;
-		register size_t success = 1;
+		uint32 * s = bigSeed;
+		int i = N;
+		size_t success = 1;
 		while ( success && i-- )
 			success = fread( s++, sizeof(uint32), 1, urandom );
 		fclose(urandom);
@@ -304,9 +304,9 @@ inline void RandomMersenneTwister::initialize( const uint32 seed ) {
 	// See Knuth TAOCP Vol 2, 3rd Ed, p.106 for multiplier.
 	// In previous versions, most significant bits (MSBs) of the seed affect
 	// only MSBs of the state array.  Modified 9 Jan 2002 by Makoto Matsumoto.
-	register uint32 * s = state;
-	register uint32 * r = state;
-	register int i = 1;
+	uint32 * s = state;
+	uint32 * r = state;
+	int i = 1;
 	*s++ = seed & 0xffffffffUL;
 	for ( ; i < N; ++i ) {
 		*s++ = ( 1812433253UL * ( *r ^ (*r >> 30) ) + i ) & 0xffffffffUL;
@@ -318,8 +318,8 @@ inline void RandomMersenneTwister::initialize( const uint32 seed ) {
 inline void RandomMersenneTwister::reload() {
 	// Generate N new values in state
 	// Made clearer and faster by Matthew Bellew (matthew.bellew@home.com)
-	register uint32 * p = state;
-	register int i;
+	uint32 * p = state;
+	int i;
 	for ( i = N - M; i--; ++p )
 		*p = twist( p[M], p[0], p[1] );
 	for ( i = M; --i; ++p )
@@ -354,18 +354,18 @@ inline RandomMersenneTwister::uint32 RandomMersenneTwister::hash( time_t t, cloc
 
 
 inline void RandomMersenneTwister::save( uint32 * saveArray ) const {
-	register uint32 * sa = saveArray;
-	register const uint32 * s = state;
-	register int i = N;
+	uint32 * sa = saveArray;
+	const uint32 * s = state;
+	int i = N;
 	for ( ; i--; *sa++ = *s++ ) {}
 	*sa = left;
 }
 
 
 inline void RandomMersenneTwister::load( uint32 * const loadArray ) {
-	register uint32 * s = state;
-	register uint32 * la = loadArray;
-	register int i = N;
+	uint32 * s = state;
+	uint32 * la = loadArray;
+	int i = N;
 	for ( ; i--; *s++ = *la++ ) {}
 	left = *la;
 	pNext = &state[N - left];
@@ -373,16 +373,16 @@ inline void RandomMersenneTwister::load( uint32 * const loadArray ) {
 
 
 inline std::ostream & operator<<( std::ostream & os, const RandomMersenneTwister & mtrand ) {
-	register const RandomMersenneTwister::uint32 * s = mtrand.state;
-	register int i = mtrand.N;
+	const RandomMersenneTwister::uint32 * s = mtrand.state;
+	int i = mtrand.N;
 	for ( ; i--; os << *s++ << "\t" ) {}
 	return os << mtrand.left;
 }
 
 
 inline std::istream & operator>>( std::istream & is, RandomMersenneTwister & mtrand ) {
-	register RandomMersenneTwister::uint32 * s = mtrand.state;
-	register int i = mtrand.N;
+	RandomMersenneTwister::uint32 * s = mtrand.state;
+	int i = mtrand.N;
 	for ( ; i--; is >> *s++ ) {}
 	is >> mtrand.left;
 	mtrand.pNext = &mtrand.state[mtrand.N - mtrand.left];

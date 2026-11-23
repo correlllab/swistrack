@@ -48,7 +48,7 @@ void THISCLASS::OnReloadConfiguration() {
 
 	std::string parseError = mContext->Parse(expression.ToStdString());
 	if (! parseError.empty())
-		return AddError(wxT("Parse error: ") + parseError);
+		return AddError(wxT("Parse error: ") + wxString(parseError));
 
 	mOutputRed = mContext->GetNode("Rout");
 	mOutputGreen = mContext->GetNode("Gout");
@@ -59,15 +59,15 @@ void THISCLASS::OnReloadConfiguration() {
 
 	std::string typeErrorRed = mOutputRed->Prepare();
 	if (! typeErrorRed.empty())
-		return AddError(wxT("Type error: ") + typeErrorRed);
+		return AddError(wxT("Type error: ") + wxString(typeErrorRed));
 
 	std::string typeErrorGreen = mOutputGreen->Prepare();
 	if (! typeErrorGreen.empty())
-		return AddError(wxT("Type error: ") + typeErrorGreen);
+		return AddError(wxT("Type error: ") + wxString(typeErrorGreen));
 
 	std::string typeErrorBlue = mOutputBlue->Prepare();
 	if (! typeErrorBlue.empty())
-		return AddError(wxT("Type error: ") + typeErrorBlue);
+		return AddError(wxT("Type error: ") + wxString(typeErrorBlue));
 
 	if (mOutputRed->resultType != Expression::Node::MATRIX)
 		return AddError(wxT("Rout must be a matrix."));
